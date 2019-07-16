@@ -1,9 +1,6 @@
 @testset "Test 2d mesh generators" begin
-
-include("../src/mesh.jl")
-include("../src/mesh_generator.jl")
+using jFEMTools
 import Tensors
-
 #Test generated mesh
 mesh = rectangle_mesh(TriangleCell, (2,2), Tensors.Vec{2}((0.0,0.0)), Tensors.Vec{2}((1.0,1.0)))
 @test getncells(mesh) == 8
