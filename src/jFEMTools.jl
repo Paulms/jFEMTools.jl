@@ -12,7 +12,8 @@ export  rectangle_mesh, RectangleCell, TriangleCell,
         getncells, getverticesidx, getverticescoords,
         getnedges, cell_volume, cell_centroid, cell_diameter,
         mapToGlobalIdx, getvertexset, getvertexcoords,
-        getnvertices
+        getnvertices, get_vertices_matrix, get_conectivity_list,
+	PolytopeMesh
 # Assembler
 export  start_assemble, assemble!,
         end_assemble
