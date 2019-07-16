@@ -2,9 +2,7 @@
 # Translation to Julia of MATLAB code from paper:
 # O. Suttton, The virtual element method in 50 lines of MATLAB, Numer Algor(2017) 75:1141-1159
 
-include("../src/mesh.jl")
-include("../src/mesh_generator.jl")
-include("../src/assembler.jl")
+using jFEMTools
 
 import Tensors
 using SparseArrays
@@ -70,6 +68,5 @@ u = compute_u(mesh)
 using Makie
 using ColorSchemes
 scene = Scene(resolution = (400, 200), colormap = ColorSchemes.viridis.colors)
-include("../src/plot_recipes.jl")
 plot!(scene, mesh, color = u)
 display(scene)

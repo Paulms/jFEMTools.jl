@@ -1,21 +1,25 @@
+@testset "Test 2d mesh generators" begin
+
 include("../src/mesh.jl")
 include("../src/mesh_generator.jl")
-
 import Tensors
-mesh = rectangle_mesh(TriangleCell, (2,2), Tensors.Vec{2}((0.0,0.0)), Tensors.Vec{2}((1.0,1.0)))
 
-# Plots
-#plot solution
-coordinates = get_vertices_matrix(mesh);
-connectivity = get_conectivity_list(mesh);
-using Makie
-scene = Scene()
-for row in 1:getncells(mesh)
-	#read coordinates
-	points = node(:poly, Point2f0[coordinates[node,:] for node in connectivity[row]])
-	poly!(scene, points, strokewidth = 1, color = :white, strokecolor = :black, show_axis = true, scale_plot = false)
+#Test generated mesh
+mesh = rectangle_mesh(TriangleCell, (2,2), Tensors.Vec{2}((0.0,0.0)), Tensors.Vec{2}((1.0,1.0)))
+@test getncells(mesh) == 8
+@test getnvertices(mesh) == 9
+for cell_idx in 1:getncells(mesh)
+    @test cell_volume(mesh, cell_idx) ≈ 1/8
 end
-display(scene)
+@test get_vertices_matrix(mesh) == [0.0 0.0; 0.5 0.0; 1.0 0.0; 0.0 0.5; 0.5 0.5; 1.0 0.5; 0.0 1.0; 0.5 1.0; 1.0 1.0]
+@test get_conectivity_list(mesh) == [(1, 2, 4), (2, 5, 4), (2, 3, 5), (3, 6, 5), (4, 5, 7), (5, 8, 7), (5, 6, 8), (6, 9, 8)]
+# Check expected data for cell 1
+@test mesh.cells[1].vertices == (1,2,4)
+#@test mesh.cells[1].faces == (1,2,3)
+#@test [face_orientation(mesh,1,i) for i in 1:3] == [true,false,true]
+@test cell_diameter(mesh,1) == sqrt(2)/2
+@test getnedges(mesh.cells[1]) == 3
+
 
 # Quad mesh
 mesh = rectangle_mesh(RectangleCell, (2,2), Tensors.Vec{2}((0.0,0.0)), Tensors.Vec{2}((1.0,1.0)))
@@ -30,12 +34,4 @@ cells = [
     ];
 mixmesh = PolytopeMesh(cells, mesh.vertices)
 
-coordinates = get_vertices_matrix(mixmesh);
-connectivity = get_conectivity_list(mixmesh);
-scene = Scene()
-for row in 1:getncells(mixmesh)
-	#read coordinates
-	points = node(:poly, Point2f0[coordinates[node,:] for node in connectivity[row]])
-	poly!(scene, points, strokewidth = 1, color = :white, strokecolor = :black, show_axis = true, scale_plot = false)
 end
-display(scene)

@@ -1,7 +1,3 @@
-import AbstractPlotting
-
-import AbstractPlotting: Plot, default_theme, plot!, SceneLike
-
 function default_theme(scene::SceneLike, ::Type{<: Plot(PolytopeMesh)})
      Theme(
         color = :white, strokewidth = 1, strokecolor = :black, colorrange=(0.0,1.0)
@@ -15,7 +11,7 @@ function default_theme(scene::SceneLike, ::Type{<: Plot(PolytopeMesh)})
      u = to_value(p[:color])
      for row in 1:getncells(mesh)
      	#read coordinates
-     	points = node(:poly, Point2f0[coordinates[node,:] for node in connectivity[row]])
+     	points = AbstractPlotting.node(:poly, Point2f0[coordinates[node,:] for node in connectivity[row]])
         if typeof(u) <: Array
             node_colors = [u[i] for i in connectivity[row]]
         else

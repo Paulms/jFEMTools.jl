@@ -1,7 +1,3 @@
-using SparseArrays
-using LinearAlgebra
-import Base:@propagate_inbounds
-
 struct Assembler{T}
     I::Vector{Int}
     J::Vector{Int}

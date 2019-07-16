@@ -1,4 +1,3 @@
-import Tensors
 abstract type AbstractPolytopeMesh end
 abstract type AbstractCell{dim,V,F} end
 
