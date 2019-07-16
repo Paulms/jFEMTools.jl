@@ -50,7 +50,7 @@ for el_id = 1:getncells(mesh)
 	assemble!(F, [dof for dof in vert_ids], rhs(centr)*ones(length(vert_ids)) * area / n_sides)
 end
 K = end_assemble(assembler)
-boundary_nodes = mapToGlobalIdx(mesh,getvertexset(mesh,"boundary"))
+boundary_nodes = getvertexset(mesh,"boundary")
 boundary_vals = Vector{Float64}(undef, length(boundary_nodes))
 for (i,node) in enumerate(boundary_nodes)
 	boundary_vals[i] = g(getvertexcoords(mesh, node))

@@ -17,14 +17,6 @@ struct EdgeIndex
     idx::Int
 end
 
-"""
-A `VertexIndex` wraps an (Int, Int) and defines an vertex by pointing to a (cell, vertex).
-"""
-struct VertexIndex
-    cellidx::Int
-    idx::Int
-end
-
 # Vertices
 struct Vertex{dim,T}
     x::Tensors.Vec{dim, T}
@@ -59,7 +51,7 @@ struct PolytopeMesh{dim,T,C} <: AbstractPolytopeMesh
     cellsets::Dict{String,Set{Int}}
     facesets::Dict{String,Set{FaceIndex}}
     edgesets::Dict{String,Set{EdgeIndex}}
-    vertexsets::Dict{String,Set{VertexIndex}}
+    vertexsets::Dict{String,Set{Int}}
 end
 
 function PolytopeMesh(cells,
@@ -67,7 +59,7 @@ function PolytopeMesh(cells,
               cellsets::Dict{String,Set{Int}}=Dict{String,Set{Int}}(),
               facesets::Dict{String,Set{FaceIndex}}=Dict{String,Set{FaceIndex}}(),
               edgesets::Dict{String,Set{EdgeIndex}}=Dict{String,Set{EdgeIndex}}(),
-              vertexsets::Dict{String,Set{VertexIndex}}=Dict{String,Set{VertexIndex}}()) where {dim}
+              vertexsets::Dict{String,Set{Int}}=Dict{String,Set{Int}}()) where {dim}
     return PolytopeMesh(cells, vertices, cellsets, facesets, edgesets, vertexsets)
 end
 
@@ -79,24 +71,10 @@ end
 @inline getvertexset(mesh::PolytopeMesh, set::String) = mesh.vertexsets[set]
 
 """
-function getcoords(mesh, vertex::VertexIndex)
-Return a Tensor.Vec with the coordinates of `vertex`
+function getcoords(mesh, vertex_idx::Int)
+Return a Tensor.Vec with the coordinates of vertex with index `vertex_idx`
 """
-function getcoords(mesh::PolytopeMesh, vertex::VertexIndex)
-    K = mesh.cells[vertex.cellidx]
-    return mesh.vertices[K.vertices[vertex.idx]].x
-end
-
 @inline getvertexcoords(mesh::PolytopeMesh, vertex_idx::Int) = mesh.vertices[vertex_idx].x
-
-function mapToGlobalIdx(mesh,vertexset::Set{VertexIndex})
-    globalVertexSet = Set{Int}()
-    for vertex in vertexset
-        K = mesh.cells[vertex.cellidx]
-        push!(globalVertexSet,K.vertices[vertex.idx])
-    end
-    return globalVertexSet
-end
 
 """
     getverticescoords(mesh::PolytopeMesh, cell_idx)
