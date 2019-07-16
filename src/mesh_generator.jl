@@ -28,6 +28,15 @@ function _check_vertex_data(vertices, n1,n2,n3)
     return (n1,n2,n3)
 end
 
+function _get_vertexset_from_edges(edgeset,CellType)
+    vertices = Set{VertexIndex}()
+    for edge in edgeset
+        push!(vertices, VertexIndex(edge.cellidx, reference_edge_vertices(CellType)[edge.idx][1]))
+        push!(vertices, VertexIndex(edge.cellidx, reference_edge_vertices(CellType)[edge.idx][2]))
+    end
+    return vertices
+end
+
 #########################
 # Triangle Cells 2D   #
 #########################
@@ -69,8 +78,11 @@ function rectangle_mesh(::Type{TriangleCell}, nel::NTuple{2,Int}, LL::Tensors.Ve
     edgesets["top"]    = Set{EdgeIndex}(boundary[(1:length(cell_array[2,:,end])) .+ offset]); offset += length(cell_array[2,:,end])
     edgesets["left"]   = Set{EdgeIndex}(boundary[(1:length(cell_array[1,1,:]))   .+ offset]); offset += length(cell_array[1,1,:])
     edgesets["boundary"] = union(edgesets["bottom"],edgesets["right"],edgesets["top"],edgesets["left"])
-
-    return PolytopeMesh(cells, vertices; edgesets = edgesets)
+    vertexsets = Dict{String,Set{VertexIndex}}()
+    for set in edgesets
+        vertexsets[set.first] = _get_vertexset_from_edges(set.second, TriangleCell)
+    end
+    return PolytopeMesh(cells, vertices; edgesets = edgesets, vertexsets = vertexsets)
 end
 
 #########################
@@ -115,6 +127,9 @@ function rectangle_mesh(::Type{RectangleCell}, nel::NTuple{2,Int}, LL::Tensors.V
     edgesets["top"]    = Set{EdgeIndex}(boundary[(1:length(cell_array[:,end])) .+ offset]); offset += length(cell_array[:,end])
     edgesets["left"]   = Set{EdgeIndex}(boundary[(1:length(cell_array[1,:]))   .+ offset]); offset += length(cell_array[1,:])
     edgesets["boundary"] = union(edgesets["bottom"],edgesets["right"],edgesets["top"],edgesets["left"])
-
-    return PolytopeMesh(cells, vertices; edgesets = edgesets)
+    vertexsets = Dict{String,Set{VertexIndex}}()
+    for set in edgesets
+        vertexsets[set.first] = _get_vertexset_from_edges(set.second, RectangleCell)
+    end
+    return PolytopeMesh(cells, vertices; edgesets = edgesets, vertexsets = vertexsets)
 end
