@@ -28,7 +28,7 @@ cells = [
     RectangleCell((4, 5, 8, 7)),
 	RectangleCell((5,6,9,8))
     ];
-mixmesh = PolytopeMesh(cells, mesh.nodes)
+mixmesh = PolytopeMesh(cells, mesh.vertices)
 
 coordinates = get_vertices_matrix(mixmesh);
 connectivity = get_conectivity_list(mixmesh);

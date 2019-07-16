@@ -1,4 +1,4 @@
-function _generate_2d_nodes!(nodes, nx, ny, LL, LR, UR, UL)
+function _generate_2d_vertices!(vertices, nx, ny, LL, LR, UR, UL)
       for i in 0:ny-1
         ratio_bounds = i / (ny-1)
 
@@ -12,15 +12,15 @@ function _generate_2d_nodes!(nodes, nx, ny, LL, LR, UR, UL)
             ratio = j / (nx-1)
             x = x0 * (1 - ratio) + ratio * x1
             y = y0 * (1 - ratio) + ratio * y1
-            push!(nodes, Node(Tensors.Vec{2}((x, y))))
+            push!(vertices, Vertex(Tensors.Vec{2}((x, y))))
         end
     end
 end
 
 # Check edge orientation consistency
-function _check_node_data(nodes, n1,n2,n3)
-    a = nodes[n2].x-nodes[n1].x
-    b = nodes[n3].x-nodes[n1].x
+function _check_vertex_data(vertices, n1,n2,n3)
+    a = vertices[n2].x-vertices[n1].x
+    b = vertices[n3].x-vertices[n1].x
     if (a[1]*b[2]-a[2]*b[1]) < 0
         #swap vertices 2 and 3
         return (n1,n3,n2)
@@ -41,19 +41,19 @@ function rectangle_mesh(::Type{TriangleCell}, nel::NTuple{2,Int}, LL::Tensors.Ve
     LR = Tensors.Vec{2}((UR[1],LL[2]))
     UL = Tensors.Vec{2}((LL[1],UR[2]))
     nel_x = nel[1]; nel_y = nel[2]; nel_tot = 2*nel_x*nel_y
-    n_nodes_x = nel_x + 1; n_nodes_y = nel_y + 1
-    n_nodes = n_nodes_x * n_nodes_y
+    n_vertices_x = nel_x + 1; n_vertices_y = nel_y + 1
+    n_vertices = n_vertices_x * n_vertices_y
 
-    # Generate nodes
-    nodes = Node{2,T}[]
-    _generate_2d_nodes!(nodes, n_nodes_x, n_nodes_y, LL, LR, UR, UL)
+    # Generate vertices
+    vertices = Vertex{2,T}[]
+    _generate_2d_vertices!(vertices, n_vertices_x, n_vertices_y, LL, LR, UR, UL)
 
     # Generate cells
-    node_array = reshape(collect(1:n_nodes), (n_nodes_x, n_nodes_y))
+    vertex_array = reshape(collect(1:n_vertices), (n_vertices_x, n_vertices_y))
     cells = TriangleCell[]
     for j in 1:nel_y, i in 1:nel_x
-        push!(cells, TriangleCell((node_array[i,j], node_array[i+1,j], node_array[i,j+1]))) # ◺
-        push!(cells, TriangleCell((node_array[i+1,j], node_array[i+1,j+1], node_array[i,j+1]))) # ◹
+        push!(cells, TriangleCell((vertex_array[i,j], vertex_array[i+1,j], vertex_array[i,j+1]))) # ◺
+        push!(cells, TriangleCell((vertex_array[i+1,j], vertex_array[i+1,j+1], vertex_array[i,j+1]))) # ◹
     end
 
     # Cell edges
@@ -70,13 +70,13 @@ function rectangle_mesh(::Type{TriangleCell}, nel::NTuple{2,Int}, LL::Tensors.Ve
     edgesets["left"]   = Set{EdgeIndex}(boundary[(1:length(cell_array[1,1,:]))   .+ offset]); offset += length(cell_array[1,1,:])
     edgesets["boundary"] = union(edgesets["bottom"],edgesets["right"],edgesets["top"],edgesets["left"])
 
-    return PolytopeMesh(cells, nodes; edgesets = edgesets)
+    return PolytopeMesh(cells, vertices; edgesets = edgesets)
 end
 
 #########################
 # Rectangle Cells 2D   #
 #########################
-@inline _build_cell(::Type{RectangleCell}, el_nodes, el_faces) = RectangleCell(el_nodes,(el_faces[1],el_faces[2],el_faces[3],el_faces[4]))
+@inline _build_cell(::Type{RectangleCell}, el_vertices, el_faces) = RectangleCell(el_vertices,(el_faces[1],el_faces[2],el_faces[3],el_faces[4]))
 """
 rectangle_mesh(::Type{RectangleCell}, nel::NTuple{2,Int}, LL::Vec{2,T}, UR::Vec{2,T}) where {T}
 Generate a rectangular mesh with triangular cells, where `LL` is the low left vertex
@@ -87,18 +87,18 @@ function rectangle_mesh(::Type{RectangleCell}, nel::NTuple{2,Int}, LL::Tensors.V
     LR = Tensors.Vec{2}((UR[1],LL[2]))
     UL = Tensors.Vec{2}((LL[1],UR[2]))
     nel_x = nel[1]; nel_y = nel[2]; nel_tot = nel_x*nel_y
-    n_nodes_x = nel_x + 1; n_nodes_y = nel_y + 1
-    n_nodes = n_nodes_x * n_nodes_y
+    n_vertices_x = nel_x + 1; n_vertices_y = nel_y + 1
+    n_vertices = n_vertices_x * n_vertices_y
 
-    # Generate nodes
-    nodes = Node{2,T}[]
-    _generate_2d_nodes!(nodes, n_nodes_x, n_nodes_y, LL, LR, UR, UL)
+    # Generate vertices
+    vertices = Vertex{2,T}[]
+    _generate_2d_vertices!(vertices, n_vertices_x, n_vertices_y, LL, LR, UR, UL)
 
     # Generate cells
-    node_array = reshape(collect(1:n_nodes), (n_nodes_x, n_nodes_y))
+    vertex_array = reshape(collect(1:n_vertices), (n_vertices_x, n_vertices_y))
     cells = RectangleCell[]
     for j in 1:nel_y, i in 1:nel_x
-        push!(cells, RectangleCell((node_array[i,j], node_array[i+1,j], node_array[i+1,j+1], node_array[i,j+1])))
+        push!(cells, RectangleCell((vertex_array[i,j], vertex_array[i+1,j], vertex_array[i+1,j+1], vertex_array[i,j+1])))
     end
 
     # Cell faces
@@ -116,5 +116,5 @@ function rectangle_mesh(::Type{RectangleCell}, nel::NTuple{2,Int}, LL::Tensors.V
     edgesets["left"]   = Set{EdgeIndex}(boundary[(1:length(cell_array[1,:]))   .+ offset]); offset += length(cell_array[1,:])
     edgesets["boundary"] = union(edgesets["bottom"],edgesets["right"],edgesets["top"],edgesets["left"])
 
-    return PolytopeMesh(cells, nodes; edgesets = edgesets)
+    return PolytopeMesh(cells, vertices; edgesets = edgesets)
 end

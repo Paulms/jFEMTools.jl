@@ -21,50 +21,50 @@ end
 """
 A `VertexIndex` wraps an (Int, Int) and defines an vertex by pointing to a (cell, vertex).
 """
-struct NodeIndex
+struct VertexIndex
     cellidx::Int
     idx::Int
 end
 
-# Nodes
-struct Node{dim,T}
+# Vertices
+struct Vertex{dim,T}
     x::Tensors.Vec{dim, T}
 end
 
-@inline get_coordinates(node::Node) = node.x
+@inline get_coordinates(vertex::Vertex) = vertex.x
 
 #--------------- Cells
 struct Cell{dim, N, M, L}
-    nodes::NTuple{N,Int}
+    vertices::NTuple{N,Int}
 end
 
 #Common cell types
 const TriangleCell = Cell{2,3,3,1}
 @inline get_cell_name(::TriangleCell) = "Triangle"
-@inline reference_edge_nodes(::Type{TriangleCell}) = ((2,3),(3,1),(1,2))
+@inline reference_edge_vertices(::Type{TriangleCell}) = ((2,3),(3,1),(1,2))
 
 const RectangleCell = Cell{2,4,4,1}
 @inline get_cell_name(::RectangleCell) = "Rectangle"
-@inline reference_edge_nodes(::Type{RectangleCell}) = ((1,2),(2,3),(3,4),(4,1))
+@inline reference_edge_vertices(::Type{RectangleCell}) = ((1,2),(2,3),(3,4),(4,1))
 
 # ----------------- Mesh
 struct PolytopeMesh{dim,T,C} <: AbstractPolytopeMesh
     cells::Vector{C}
-    nodes::Vector{Node{dim,T}}
+    vertices::Vector{Vertex{dim,T}}
     # Sets
     cellsets::Dict{String,Set{Int}}
     facesets::Dict{String,Set{FaceIndex}}
     edgesets::Dict{String,Set{EdgeIndex}}
-    nodesets::Dict{String,Set{NodeIndex}}
+    verticesets::Dict{String,Set{VertexIndex}}
 end
 
 function PolytopeMesh(cells,
-              nodes;
+              vertices;
               cellsets::Dict{String,Set{Int}}=Dict{String,Set{Int}}(),
               facesets::Dict{String,Set{FaceIndex}}=Dict{String,Set{FaceIndex}}(),
               edgesets::Dict{String,Set{EdgeIndex}}=Dict{String,Set{EdgeIndex}}(),
-              nodesets::Dict{String,Set{NodeIndex}}=Dict{String,Set{NodeIndex}}()) where {dim}
-    return PolytopeMesh(cells, nodes, cellsets, facesets, edgesets, nodesets)
+              verticesets::Dict{String,Set{VertexIndex}}=Dict{String,Set{VertexIndex}}()) where {dim}
+    return PolytopeMesh(cells, vertices, cellsets, facesets, edgesets, verticesets)
 end
 
 # API
@@ -72,16 +72,16 @@ end
 @inline getncells(mesh::PolytopeMesh) = length(mesh.cells)
 
 function get_vertices_matrix(mesh::PolytopeMesh{dim,T,C}) where {dim,T,C}
-    nodes_m = Matrix{T}(undef,length(mesh.nodes),dim)
-    for (k,node) in enumerate(mesh.nodes)
-        nodes_m[k,:] = node.x
+    vertices_m = Matrix{T}(undef,length(mesh.vertices),dim)
+    for (k,vertex) in enumerate(mesh.vertices)
+        vertices_m[k,:] = vertex.x
     end
-    nodes_m
+    vertices_m
 end
 function get_conectivity_list(mesh::PolytopeMesh{dim,T,C}) where {dim,T,C}
     cells_m = Vector()
     for k = 1:getncells(mesh)
-        push!(cells_m,mesh.cells[k].nodes)
+        push!(cells_m,mesh.cells[k].vertices)
     end
     cells_m
 end
