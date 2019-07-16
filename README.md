@@ -1,2 +1,2 @@
-# jFEMToools
+# jFEMTools
 Tools for FEM code
