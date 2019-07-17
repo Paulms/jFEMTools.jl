@@ -84,7 +84,7 @@ function rectangle_mesh(::Type{TriangleCell}, nel::NTuple{2,Int}, LL::Tensors.Ve
     for set in edgesets
         vertexsets[set.first] = _get_vertexset_from_edges(cells,set.second, TriangleCell)
     end
-    return PolytopeMesh(cells, vertices; edgesets = edgesets, vertexsets = vertexsets)
+    return PolytopalMesh(cells, vertices; edgesets = edgesets, vertexsets = vertexsets)
 end
 
 #########################
@@ -133,5 +133,5 @@ function rectangle_mesh(::Type{RectangleCell}, nel::NTuple{2,Int}, LL::Tensors.V
     for set in edgesets
         vertexsets[set.first] = _get_vertexset_from_edges(cells,set.second, RectangleCell)
     end
-    return PolytopeMesh(cells, vertices; edgesets = edgesets, vertexsets = vertexsets)
+    return PolytopalMesh(cells, vertices; edgesets = edgesets, vertexsets = vertexsets)
 end

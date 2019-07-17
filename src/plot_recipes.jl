@@ -1,10 +1,10 @@
-function default_theme(scene::SceneLike, ::Type{<: Plot(PolytopeMesh)})
+function default_theme(scene::SceneLike, ::Type{<: Plot(PolytopalMesh)})
      Theme(
         color = :white, strokewidth = 1, strokecolor = :black, colorrange=(0.0,1.0)
      )
  end
 
- function AbstractPlotting.plot!(p::Plot(PolytopeMesh))
+ function AbstractPlotting.plot!(p::Plot(PolytopalMesh))
      mesh = to_value(p[1])
      coordinates = get_vertices_matrix(mesh);
      connectivity = get_conectivity_list(mesh);

@@ -29,6 +29,6 @@ cells = [
     RectangleCell((4, 5, 8, 7)),
 	RectangleCell((5,6,9,8))
     ];
-mixmesh = PolytopeMesh(cells, mesh.vertices)
+mixmesh = PolytopalMesh(cells, mesh.vertices)
 
 end

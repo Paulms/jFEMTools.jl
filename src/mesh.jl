@@ -1,4 +1,4 @@
-abstract type AbstractPolytopeMesh end
+abstract type AbstractPolytopalMesh end
 abstract type AbstractCell{dim,V,F} end
 
 """
@@ -44,7 +44,7 @@ const RectangleCell = Cell{2,4,4,1}
 @inline getnfaces(cell::Cell{dim,N,M,P}) where {dim,N,M,P} = P
 
 # ----------------- Mesh
-struct PolytopeMesh{dim,T,C} <: AbstractPolytopeMesh
+struct PolytopalMesh{dim,T,C} <: AbstractPolytopalMesh
     cells::Vector{C}
     vertices::Vector{Vertex{dim,T}}
     # Sets
@@ -54,33 +54,33 @@ struct PolytopeMesh{dim,T,C} <: AbstractPolytopeMesh
     vertexsets::Dict{String,Set{Int}}
 end
 
-function PolytopeMesh(cells,
+function PolytopalMesh(cells,
               vertices;
               cellsets::Dict{String,Set{Int}}=Dict{String,Set{Int}}(),
               facesets::Dict{String,Set{FaceIndex}}=Dict{String,Set{FaceIndex}}(),
               edgesets::Dict{String,Set{EdgeIndex}}=Dict{String,Set{EdgeIndex}}(),
               vertexsets::Dict{String,Set{Int}}=Dict{String,Set{Int}}()) where {dim}
-    return PolytopeMesh(cells, vertices, cellsets, facesets, edgesets, vertexsets)
+    return PolytopalMesh(cells, vertices, cellsets, facesets, edgesets, vertexsets)
 end
 
 # API
 
-@inline getncells(mesh::PolytopeMesh) = length(mesh.cells)
-@inline getnvertices(mesh::PolytopeMesh) = length(mesh.vertices)
+@inline getncells(mesh::PolytopalMesh) = length(mesh.cells)
+@inline getnvertices(mesh::PolytopalMesh) = length(mesh.vertices)
 @inline getverticesidx(mesh, cell_idx) = mesh.cells[cell_idx].vertices
-@inline getvertexset(mesh::PolytopeMesh, set::String) = mesh.vertexsets[set]
+@inline getvertexset(mesh::PolytopalMesh, set::String) = mesh.vertexsets[set]
 
 """
 function getcoords(mesh, vertex_idx::Int)
 Return a Tensor.Vec with the coordinates of vertex with index `vertex_idx`
 """
-@inline getvertexcoords(mesh::PolytopeMesh, vertex_idx::Int) = mesh.vertices[vertex_idx].x
+@inline getvertexcoords(mesh::PolytopalMesh, vertex_idx::Int) = mesh.vertices[vertex_idx].x
 
 """
-    getverticescoords(mesh::PolytopeMesh, cell_idx)
+    getverticescoords(mesh::PolytopalMesh, cell_idx)
 Return a vector with the coordinates of the vertices of cell number `cell`.
 """
-@inline function getverticescoords(mesh::PolytopeMesh{dim,T}, cell_idx::Int) where {dim,T}
+@inline function getverticescoords(mesh::PolytopalMesh{dim,T}, cell_idx::Int) where {dim,T}
     N = getnvertices(mesh.cells[cell_idx])
     coords = Vector{Tensors.Vec{dim,T}}(undef, N)
     for (i,j) in enumerate(mesh.cells[cell_idx].vertices)
@@ -89,14 +89,14 @@ Return a vector with the coordinates of the vertices of cell number `cell`.
     return coords
 end
 
-function get_vertices_matrix(mesh::PolytopeMesh{dim,T,C}) where {dim,T,C}
+function get_vertices_matrix(mesh::PolytopalMesh{dim,T,C}) where {dim,T,C}
     vertices_m = Matrix{T}(undef,length(mesh.vertices),dim)
     for (k,vertex) in enumerate(mesh.vertices)
         vertices_m[k,:] = vertex.x
     end
     vertices_m
 end
-function get_conectivity_list(mesh::PolytopeMesh{dim,T,C}) where {dim,T,C}
+function get_conectivity_list(mesh::PolytopalMesh{dim,T,C}) where {dim,T,C}
     cells_m = Vector()
     for k = 1:getncells(mesh)
         push!(cells_m,mesh.cells[k].vertices)
@@ -104,13 +104,13 @@ function get_conectivity_list(mesh::PolytopeMesh{dim,T,C}) where {dim,T,C}
     cells_m
 end
 
-function cell_volume(mesh::PolytopeMesh{2}, cell_idx::Int)
+function cell_volume(mesh::PolytopalMesh{2}, cell_idx::Int)
     N = getnvertices(mesh.cells[cell_idx])
     verts = getverticescoords(mesh,cell_idx)
     return 0.5*abs(sum(verts[j][1]*verts[mod1(j+1,N)][2]-verts[mod1(j+1,N)][1]*verts[j][2] for j ∈ 1:N))
 end
 
-function cell_centroid(mesh::PolytopeMesh{2}, cell_idx::Int)
+function cell_centroid(mesh::PolytopalMesh{2}, cell_idx::Int)
     verts = getverticescoords(mesh,cell_idx)
     Ve = cell_volume(mesh, cell_idx)
     N = getnvertices(mesh.cells[cell_idx])
@@ -119,7 +119,7 @@ function cell_centroid(mesh::PolytopeMesh{2}, cell_idx::Int)
     return Tensors.Vec{2}((xc,yc))
 end
 
-function cell_diameter(mesh::PolytopeMesh{dim,T}, cell_idx::Int) where {dim,T}
+function cell_diameter(mesh::PolytopalMesh{dim,T}, cell_idx::Int) where {dim,T}
     K = mesh.cells[cell_idx]
     verts = getverticescoords(mesh,cell_idx)
     h = zero(T)
