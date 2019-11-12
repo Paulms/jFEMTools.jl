@@ -39,6 +39,9 @@ function _get_vertexset_from_edges(cells,edgeset,CellType)
     return vertices
 end
 
+# Shortcuts
+unitSquareMesh(cellType, nel::NTuple{2,Int}) = rectangle_mesh(cellType, nel, Tensors.Vec{2}((0.0,0.0)), Tensors.Vec{2}((1.0,1.0)))
+
 #########################
 # Triangle Cells 2D   #
 #########################
