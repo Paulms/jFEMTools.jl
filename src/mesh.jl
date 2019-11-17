@@ -114,6 +114,19 @@ function getverticescoords(mesh::PolytopalMesh{dim,T}, edge_idx::EdgeIndex) wher
     return coords
 end
 
+function getverticesindices(mesh::PolytopalMesh{dim,T}, edge_idx::EdgeIndex) where {dim,T}
+    cell = getcells(mesh)[edge_idx.cellidx]
+    ref_edge = reference_edge_vertices(typeof(cell))[edge_idx.idx]
+    return [cell.vertices[ref_edge[i]] for i in 1:2]
+end
+
+function get_Normal(mesh::PolytopalMesh{dim,T}, edge_idx::EdgeIndex) where {dim,T}
+    coords = getverticescoords(mesh, edge_idx)
+    v1 =  coords[2] - coords[1]
+    n1 = Tensors.Vec{2}((v1[2], -v1[1]))
+    return n1/norm(n1)
+end
+
 function get_vertices_matrix(mesh::PolytopalMesh{dim,T,C}) where {dim,T,C}
     vertices_m = Matrix{T}(undef,length(mesh.vertices),dim)
     for (k,vertex) in enumerate(mesh.vertices)
@@ -137,20 +150,18 @@ end
 
 function cell_centroid(mesh::PolytopalMesh{2}, cell_idx::Int)
     verts = getverticescoords(mesh,cell_idx)
-    Ve = cell_volume(mesh, cell_idx)
-    N = getnvertices(mesh.cells[cell_idx])
-    xc = 1/(6*Ve)*sum((verts[j][1]*verts[mod1(j+1,N)][2]-verts[mod1(j+1,N)][1]*verts[j][2])*(verts[j][1]+verts[mod1(j+1,N)][1]) for j ∈ 1:N)
-    yc = 1/(6*Ve)*sum((verts[j][1]*verts[mod1(j+1,N)][2]-verts[mod1(j+1,N)][1]*verts[j][2])*(verts[j][2]+verts[mod1(j+1,N)][2]) for j ∈ 1:N)
-    return Tensors.Vec{2}((xc,yc))
+    vertices = [StaticArrays.SVector(x[1],x[2]) for x in verts]
+    chull = PlanarConvexHulls.ConvexHull{PlanarConvexHulls.CCW}(vertices)
+    return Tensors.Vec{2}(PlanarConvexHulls.centroid(chull))
 end
 
 function cell_diameter(mesh::PolytopalMesh{dim,T}, cell_idx::Int) where {dim,T}
-    K = mesh.cells[cell_idx]
     verts = getverticescoords(mesh,cell_idx)
-    h = zero(T)
-     for k in reference_edge_vertices(typeof(K))
-        mσ = norm(verts[k[2]] - verts[k[1]])
-        h = max(h, mσ)
+    vertices = [StaticArrays.SVector(x[1],x[2]) for x in verts]
+    chull = PlanarConvexHulls.ConvexHull{PlanarConvexHulls.CCW}(vertices)
+    h = 0.0
+    for vert in chull.vertices
+        h = max(h,maximum([norm(vert-vert2) for vert2 in chull.vertices]))
     end
     h
 end

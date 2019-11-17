@@ -1,24 +1,10 @@
-map_unit_to_segment(xi::Tensors.Vec{1,T}, x1::Tensors.Vec{2,T}, x2::Tensors.Vec{2,T}) where {T} = x1*(1-xi[]) + x2*xi[]
+map_unit_to_segment(xi::Tensors.Vec{1,T}, x::Vector{Tensors.Vec{2,T}}) where {T} = x[1]*(1-xi[]) + x[2]*xi[]
 
-struct QuadratureRule{dim,T}
-    weights::Vector{T}
-    points::Vector{Tensors.Vec{dim,T}}
-end
+δ(i, j) = i == j
 
 function polygon_area(verts)
     N = size(verts,1)
     return 0.5*abs(sum(verts[j][1]*verts[mod1(j+1,N)][2]-verts[mod1(j+1,N)][1]*verts[j][2] for j ∈ 1:N))
-end
-
-struct RefSimplex end
-
-function reference_coordinates(::Type{RefSimplex}, ::Type{Val{1}})
-    return [Tensors.Vec{1, Float64}((0.0,)),Tensors.Vec{1, Float64}((1.0,))]
-end
-function reference_coordinates(::Type{RefSimplex}, ::Type{Val{2}})
-    [Tensors.Vec{2, Float64}((0.0, 0.0)),
-     Tensors.Vec{2, Float64}((1.0, 0.0)),
-     Tensors.Vec{2, Float64}((0.0, 1.0))]
 end
 
 """ Compute volume of a simplex spanned by vertices `verts` """
@@ -35,7 +21,7 @@ end
 function mapPointsFromReference(::Type{RefSimplex}, K::Vector{Tensors.Vec{N, T}}, points::Vector{Tensors.Vec{N, T}}) where {N,T}
     ref_verts = reference_coordinates(RefSimplex, Val{N})
     A, b = get_affine_map(ref_verts, K)
-    return [A*x+Tensors.Vec{N}(b) for x in points]
+    return [Tensors.Vec{N}(A*x+Tensors.Vec{N}(b)) for x in points]
 end
 
 """

@@ -114,7 +114,7 @@ function _distribute_dofs(dh::DofHandler{dim,T}, element::VirtualElement) where 
                                 Base._setindex!(topologyDicts[n_element][fi], nextdof, element, -token)
                                 #for d in 1:getncomponents(dh.variables[fi])
                                     push!(dh.cell_dofs, nextdof)
-                                #    nextdof += 1
+                                    nextdof += 1
                                 #end
                             end
                         end
@@ -126,7 +126,7 @@ function _distribute_dofs(dh::DofHandler{dim,T}, element::VirtualElement) where 
                 for celldof in 1:ncelldofs
                     #for d in 1:getncomponents(dh.variables[fi])
                         push!(dh.cell_dofs, nextdof)
-                    #    nextdof += 1
+                        nextdof += 1
                     #end
                 end # cell loop
             end

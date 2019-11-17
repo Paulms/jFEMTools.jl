@@ -9,9 +9,8 @@ import AbstractPlotting: Plot, default_theme, plot!, SceneLike, Theme, to_value,
 import Base.ht_keyindex2!
 import FastGaussQuadrature
 import VoronoiDelaunay
-
-# Abstract types
-abstract type AbstractQuadratureRule end
+import PlanarConvexHulls
+import StaticArrays
 
 # Mesh related functions
 export  rectangle_mesh, RectangleCell, TriangleCell,
@@ -28,6 +27,10 @@ export VirtualElement,LocalVirtualElement
 
 #VEM utils
 export DofHandler
+export VEMOperators
+export get_K
+
+include("quadrature.jl")
 include("tools.jl")
 include("StrangQuad.jl")
 include("Interpolations.jl")
@@ -37,4 +40,6 @@ include("assembler.jl")
 include("plot_recipes.jl")
 include("VirtualElement.jl")
 include("DofHandler.jl")
+include("VEMOperators.jl")
+
 end # module
