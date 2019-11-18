@@ -1,9 +1,13 @@
 struct LocalVEMOperators{T}
+  order::Int
   D::Matrix{T}
   G::Matrix{T}
   B::Matrix{T}
   H::Matrix{T}
+  b::Vector{T}
 end
+
+get_order(lvem::LocalVEMOperators) = lvem.order
 
 struct VEMOperators
     dofs::DofHandler
@@ -15,20 +19,21 @@ struct CellCache{dim}
   ci::Int
   tess
   quad
+  f
 end
 
-function VEMOperators(dof::DofHandler, element::VirtualElement)
-    elements = get_local_elements(dof, element)
+function VEMOperators(dof::DofHandler, element::VirtualElement; load = (x->0.0))
+    elements = get_local_elements(dof, element, load)
     VEMOperators(dof,elements)
 end
 
-function get_local_elements(dof::DofHandler{2}, element::VirtualElement{2})
+function get_local_elements(dof::DofHandler{2}, element::VirtualElement{2}, load)
     local_elements = Vector{LocalVEMOperators}()
     for (ci, cell) in enumerate(getcells(dof.mesh))
         vertices = getverticescoords(dof.mesh, ci)
         tess = get_2Dtesselation(vertices) #tesselate cell
         quad = QuadratureRule{2,RefSimplex}(Strang(),get_degree(element))
-        cache = CellCache(cell, ci, tess, quad)
+        cache = CellCache(cell, ci, tess, quad,load)
         centroid = cell_centroid(dof.mesh, ci)
         diameter = cell_diameter(dof.mesh, ci)
         lelement = LocalVirtualElement(2,get_degree(element),centroid,diameter)
@@ -36,7 +41,8 @@ function get_local_elements(dof::DofHandler{2}, element::VirtualElement{2})
         G = _compute_local_G(lelement, dof, cache)
         B = _compute_local_B(lelement, dof, cache)
         H = _compute_local_H(lelement, dof, cache)
-        push!(local_elements, LocalVEMOperators(D,G,B,H))
+        b = _compute_local_b(lelement, dof, cache)
+        push!(local_elements, LocalVEMOperators(get_degree(element),D,G,B,H,b))
     end
     local_elements
 end
@@ -280,7 +286,45 @@ function _compute_local_H(element::LocalVirtualElement, dof::DofHandler{2}, cach
   return H
 end
 
-function get_K(op::VEMOperators)
+""" Compute the local load vector """
+function _compute_local_b(element::LocalVirtualElement, dof::DofHandler{2}, cache::CellCache{2})
+  cell = cache.cell; ci = cache.ci; load_func = cache.f
+  degree = get_degree(element)
+  nk = Int((degree+1)*(degree+2)/2)
+  b = zeros(nk)
+
+  for i in 1:nk, j in 1:nk
+      for k in cache.tess
+        pt = mapPointsFromReference(RefSimplex,k,cache.quad.points);
+        for g=1:size(pt,1)
+          b[i] = b[i] + 2*simplex_area(k)*
+            cache.quad.weights[g]*
+            ( value(element.basis, i, pt[g])* load_func(pt[g]))
+        end
+      end
+  end
+  return b
+end
+
+function assemble_load(op::VEMOperators)
+      b = zeros(ndofs(op.dofs))
+      for k = 1:getncells(op.dofs.mesh)
+        cell_dofs = Vector{Int}(undef, ndofs_per_cell(op.dofs, k))
+        if get_order(op.elements[k])  < 3
+          # In this case: Π^∇ = Π^0
+          Π∇s = op.elements[k].G\op.elements[k].B
+          b_local = Π∇s'*op.elements[k].b
+        else
+          throw("The L^2 operator is not yet supported for k>2.")
+        end
+        # Assembly
+        celldofs!(cell_dofs, op.dofs, k)
+        assemble!(b,cell_dofs,b_local)
+      end
+      return b
+end
+
+function assemble_K(op::VEMOperators)
     K = create_sparsity_pattern(op.dofs);
     assembler = start_assemble(K)
     for k = 1:getncells(op.dofs.mesh)
@@ -299,4 +343,27 @@ function get_K(op::VEMOperators)
       assemble!(assembler, cell_dofs, K_local)
     end
     return K
+end
+
+""" Compute Mass Matrix """
+function assemble_M(op::VEMOperators)
+  M = create_sparsity_pattern(op.dofs);
+  assembler = start_assemble(M)
+
+  for k = 1:getncells(op.dofs.mesh)
+    cell_dofs = Vector{Int}(undef, ndofs_per_cell(op.dofs, k))
+    if get_order(op.elements[k])  < 3
+      # In this case: Π^∇ = Π^0
+      Π∇s = op.elements[k].G\op.elements[k].B
+      Π∇ = op.elements[k].D*Π∇s
+
+      M_local = Π∇s'*op.elements[k].H*Π∇s
+    else
+      throw("The L^2 operator is not yet supported for k>2.")
+    end
+    # Assembly
+    celldofs!(cell_dofs, op.dofs, k)
+    assemble!(assembler, cell_dofs, M_local)
+  end
+  return M
 end

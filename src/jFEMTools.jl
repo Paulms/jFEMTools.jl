@@ -28,7 +28,7 @@ export VirtualElement,LocalVirtualElement
 #VEM utils
 export DofHandler
 export VEMOperators
-export get_K
+export assemble_K, assemble_M, assemble_load
 
 include("quadrature.jl")
 include("tools.jl")
