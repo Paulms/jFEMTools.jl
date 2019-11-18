@@ -10,12 +10,12 @@ get_degree(el::VirtualElement) = el.degree
 
 struct LocalVirtualElement
     degree::Int
-    basis::Monomials
+    Pk_basis::Monomials
     edge_quad::QuadratureRule
 end
 
 function LocalVirtualElement(dim, degree, centroid, diameter)
-    basis = Monomials(dim,degree,centroid, diameter)
+    Pk_basis = Monomials(dim,degree,centroid, diameter)
     if degree == 1
         points = Vector{Float64}(); weights = Vector{Float64}()
     else
@@ -25,7 +25,7 @@ function LocalVirtualElement(dim, degree, centroid, diameter)
         points = points .+ 1.0; points /= 2.0
     end
     quad = QuadratureRule{1,Segment,Float64}(weights, [Tensors.Tensor{1,1}([x]) for x in points])
-    LocalVirtualElement(degree, basis, quad)
+    LocalVirtualElement(degree, Pk_basis, quad)
 end
 
 get_degree(el::LocalVirtualElement) = el.degree

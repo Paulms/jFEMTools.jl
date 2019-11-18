@@ -59,26 +59,26 @@ function _compute_local_D(element::LocalVirtualElement, dof::DofHandler{2}, cach
     vertices = getverticescoords(dof.mesh, ci)
     # compute value in vertices
     for i in 1:nv, j in 1:nk
-            D[i,j] = value(element.basis, j, vertices[i])
+            D[i,j] = value(element.Pk_basis, j, vertices[i])
     end
     if degree >= 2
         ne = getnedges(cell)
         # Compute value for edges
         for i in (nv+1):(nv+ne), j in 1:nk
-            D[i,j] = value(element.basis, j,
+            D[i,j] = value(element.Pk_basis, j,
                 map_unit_to_segment(element.edge_quad.points[2],
                         getverticescoords(dof.mesh, EdgeIndex(ci,i-nv))))
         end
         #Compute the Internal dofs
-        nf = Int((degree-1)*degree/2)   #dimension of basis with order k-2
-        lap_basis = Monomials(2,degree-2,element.basis.centroid, element.basis.diameter)
+        nf = Int((degree-1)*degree/2)   #dimension of Pk_basis with order k-2
+        lap_basis = Monomials(2,degree-2,element.Pk_basis.centroid, element.Pk_basis.diameter)
         for i in (nv+ne*(degree-1)+1):ndofs, j in 1:nk
              for k in cache.tess
                pt = mapPointsFromReference(RefSimplex,k,cache.quad.points);
                for g in 1:size(pt,1)
                  D[i,j] = D[i,j] + 2*simplex_area(k)*
                    cache.quad.weights[g]*
-                   (value(element.basis, j, pt[g])*
+                   (value(element.Pk_basis, j, pt[g])*
                     value(lap_basis, i-(nv+ne*(degree-1)),
                    pt[g]))/cell_volume(dof.mesh, ci)
                end
@@ -96,7 +96,7 @@ function p0m(element::LocalVirtualElement, dof::DofHandler{2},cache::CellCache{2
    if degree == 1
      vertices = getverticescoords(dof.mesh, ci)
      for j in 1:nv
-       P0m = P0m + value(element.basis, i, vertices[j])
+       P0m = P0m + value(element.Pk_basis, i, vertices[j])
      end
      P0m = P0m/nv
    else
@@ -104,7 +104,7 @@ function p0m(element::LocalVirtualElement, dof::DofHandler{2},cache::CellCache{2
        pt = mapPointsFromReference(RefSimplex,k,cache.quad.points);
        for g in 1:size(pt,1)
          P0m = P0m + 2*simplex_area(k)*
-           cache.quad.weights[g]*value(element.basis, i, pt[g])
+           cache.quad.weights[g]*value(element.Pk_basis, i, pt[g])
        end
      end
      P0m = P0m/cell_volume(dof.mesh, ci)
@@ -133,11 +133,11 @@ function _compute_local_G(element::LocalVirtualElement, dof::DofHandler{2}, cach
            distance = norm(v[2]-v[1])
 
            # Use trapezium rule
-           grad_m_i_v1 = gradient_value(element.basis, i, v[1])
-           m_j_v1 = value(element.basis, j, v[1])
+           grad_m_i_v1 = gradient_value(element.Pk_basis, i, v[1])
+           m_j_v1 = value(element.Pk_basis, j, v[1])
 
-           grad_m_i_v2 = gradient_value(element.basis, i, v[2])
-           m_j_v2 = value(element.basis, j, v[2])
+           grad_m_i_v2 = gradient_value(element.Pk_basis, i, v[2])
+           m_j_v2 = value(element.Pk_basis, j, v[2])
 
            G[i,j] = G[i,j] + distance/2 * (
              dot(grad_m_i_v1,normal)*m_j_v1 +
@@ -151,8 +151,8 @@ function _compute_local_G(element::LocalVirtualElement, dof::DofHandler{2}, cach
            for g in 1:size(pt,1)
              G[i,j] = G[i,j] + 2*simplex_area(k)*
                 cache.quad.weights[g]*
-                dot(gradient_value(element.basis, i, pt[g]),
-                    gradient_value(element.basis, j, pt[g]),)
+                dot(gradient_value(element.Pk_basis, i, pt[g]),
+                    gradient_value(element.Pk_basis, j, pt[g]),)
            end
          end
        end
@@ -169,21 +169,21 @@ function compute_d_αβ(element::LocalVirtualElement, dof::DofHandler{2},cache::
   d = zeros(nkm2,1);
   h = cell_diameter(dof.mesh, ci)
   # Build dx^2 monomial
-  dxx_monomial_index = element.basis.indices[k][1]-2
+  dxx_monomial_index = element.Pk_basis.indices[k][1]-2
   laplacian_indices = get_monomial2DIndices(degree - 2)
   if (dxx_monomial_index >= 0)
     for i in 1:nkm2
-      if (laplacian_indices[i] == (dxx_monomial_index, element.basis.indices[k][2]))
-        d[i] = d[i] + element.basis.indices[k][1]*(element.basis.indices[k][1]-1)/h^2;
+      if (laplacian_indices[i] == (dxx_monomial_index, element.Pk_basis.indices[k][2]))
+        d[i] = d[i] + element.Pk_basis.indices[k][1]*(element.Pk_basis.indices[k][1]-1)/h^2;
       end
     end
   end
   # Build dy^2 monomial
-  dyy_monomial_index = element.basis.indices[k][2]-2
+  dyy_monomial_index = element.Pk_basis.indices[k][2]-2
   if (dyy_monomial_index >= 0)
     for i in 1:nkm2
-      if (laplacian_indices[i] == (element.basis.indices[k][1],dyy_monomial_index))
-        d[i] = d[i] + element.basis.indices[k][2]*(element.basis.indices[k][2]-1)/h^2;
+      if (laplacian_indices[i] == (element.Pk_basis.indices[k][1],dyy_monomial_index))
+        d[i] = d[i] + element.Pk_basis.indices[k][2]*(element.Pk_basis.indices[k][2]-1)/h^2;
       end
     end
   end
@@ -210,10 +210,10 @@ function _compute_local_B(element::LocalVirtualElement, dof::DofHandler{2}, cach
            distance = norm(v[2]-v[1])
 
            # Use trapezium rule
-           grad_m_i_v1 = gradient_value(element.basis, i, v[1])
+           grad_m_i_v1 = gradient_value(element.Pk_basis, i, v[1])
            φ_j_v1 = δ(j, getverticesindices(dof.mesh, EdgeIndex(ci,k))[1])
 
-           grad_m_i_v2 = gradient_value(element.basis, i, v[2])
+           grad_m_i_v2 = gradient_value(element.Pk_basis, i, v[2])
            φ_j_v2 = δ(j, getverticesindices(dof.mesh, EdgeIndex(ci,k))[2])
 
            B[i,j] = B[i,j] + distance/2 * (
@@ -241,7 +241,7 @@ function _compute_local_B(element::LocalVirtualElement, dof::DofHandler{2}, cach
            normal = get_Normal(dof.mesh, EdgeIndex(ci, k))
            distance = norm(v[2]-v[1])
            for g=1:size(element.edge_quad.points,1)
-             grad_m_i = gradient_value(element.basis, i,
+             grad_m_i = gradient_value(element.Pk_basis, i,
                   map_unit_to_segment(element.edge_quad.points[g],v))
              edge_dof = -1
              if g == 1
@@ -279,7 +279,7 @@ function _compute_local_H(element::LocalVirtualElement, dof::DofHandler{2}, cach
         for g=1:size(pt,1)
           H[i,j] = H[i,j] + 2*simplex_area(k)*
             cache.quad.weights[g]*
-            ( value(element.basis, i, pt[g])* value(element.basis, j, pt[g]))
+            ( value(element.Pk_basis, i, pt[g])* value(element.Pk_basis, j, pt[g]))
         end
       end
   end
@@ -299,7 +299,7 @@ function _compute_local_b(element::LocalVirtualElement, dof::DofHandler{2}, cach
         for g=1:size(pt,1)
           b[i] = b[i] + 2*simplex_area(k)*
             cache.quad.weights[g]*
-            ( value(element.basis, i, pt[g])* load_func(pt[g]))
+            ( value(element.Pk_basis, i, pt[g])* load_func(pt[g]))
         end
       end
   end
