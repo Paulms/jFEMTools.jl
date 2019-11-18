@@ -25,14 +25,10 @@ end
 function get_local_elements(dof::DofHandler{2}, element::VirtualElement{2})
     local_elements = Vector{LocalVEMOperators}()
     for (ci, cell) in enumerate(getcells(dof.mesh))
-        if get_degree(element) > 1
-          vertices = getverticescoords(dof.mesh, ci)
-          tess = get_2Dtesselation(vertices) #tesselate cell
-          quad = QuadratureRule{2,RefSimplex}(Strang(),get_degree(element))
-          cache = CellCache(cell, ci, tess, quad)
-        else
-          cache = CellCache(cell, ci, nothing, nothing)
-        end
+        vertices = getverticescoords(dof.mesh, ci)
+        tess = get_2Dtesselation(vertices) #tesselate cell
+        quad = QuadratureRule{2,RefSimplex}(Strang(),get_degree(element))
+        cache = CellCache(cell, ci, tess, quad)
         centroid = cell_centroid(dof.mesh, ci)
         diameter = cell_diameter(dof.mesh, ci)
         lelement = LocalVirtualElement(2,get_degree(element),centroid,diameter)
@@ -92,6 +88,7 @@ function p0m(element::LocalVirtualElement, dof::DofHandler{2},cache::CellCache{2
   nv = getnvertices(cell)
   P0m = 0.0
    if degree == 1
+     vertices = getverticescoords(dof.mesh, ci)
      for j in 1:nv
        P0m = P0m + value(element.basis, i, vertices[j])
      end
@@ -137,8 +134,8 @@ function _compute_local_G(element::LocalVirtualElement, dof::DofHandler{2}, cach
            m_j_v2 = value(element.basis, j, v[2])
 
            G[i,j] = G[i,j] + distance/2 * (
-             sum( grad_m_i_v1*normal )*m_j_v1 +
-             sum( grad_m_i_v2*normal )*m_j_v2 )
+             dot(grad_m_i_v1,normal)*m_j_v1 +
+             dot(grad_m_i_v2,normal)*m_j_v2 )
          end
      end
    else
@@ -214,8 +211,8 @@ function _compute_local_B(element::LocalVirtualElement, dof::DofHandler{2}, cach
            φ_j_v2 = δ(j, getverticesindices(dof.mesh, EdgeIndex(ci,k))[2])
 
            B[i,j] = B[i,j] + distance/2 * (
-             sum( grad_m_i_v1*normal ) * φ_j_v1 +
-             sum( grad_m_i_v2*normal ) * φ_j_v2 )
+             dot( grad_m_i_v1,normal ) * φ_j_v1 +
+             dot( grad_m_i_v2,normal ) * φ_j_v2 )
 
          end
      end

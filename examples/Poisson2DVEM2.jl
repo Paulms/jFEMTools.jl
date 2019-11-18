@@ -6,8 +6,33 @@ using LinearAlgebra
 
 mesh = unitSquareMesh(RectangleCell, (1,1));
 
-degree = 2;
+degree = 1;
 dim = 2;
+element = VirtualElement(dim,degree);
+dofs = DofHandler(mesh, element);
+operators = VEMOperators(dofs, element);
+# Test
+d = sqrt(2)
+Bref = 1/4*[1 1 1 1;
+            -d d -d d;
+            -d -d d d]
+Bref ≈ operators.elements[1].B
+
+Dref = 1/4*[4 -d -d;
+            4 d -d;
+            4 d  d;
+            4 -d d]
+
+Dref ≈ operators.elements[1].D
+
+Gref = 1/2*[2 0 0;
+            0 1 0;
+            0 0 1]
+
+Gref ≈ operators.elements[1].G
+
+
+degree = 2;
 element = VirtualElement(dim,degree);
 dofs = DofHandler(mesh, element);
 operators = VEMOperators(dofs, element);

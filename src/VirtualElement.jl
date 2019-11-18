@@ -16,10 +16,14 @@ end
 
 function LocalVirtualElement(dim, degree, centroid, diameter)
     basis = Monomials(dim,degree,centroid, diameter)
-    points, weights = FastGaussQuadrature.gausslobatto(2*degree-1)
-    # Shift interval from (-1,1) to (0,1)
-    weights *= 0.5
-    points = points .+ 1.0; points /= 2.0
+    if degree == 1
+        points = Vector{Float64}(); weights = Vector{Float64}()
+    else
+        points, weights = FastGaussQuadrature.gausslobatto(2*degree-1)
+        # Shift interval from (-1,1) to (0,1)
+        weights *= 0.5
+        points = points .+ 1.0; points /= 2.0
+    end
     quad = QuadratureRule{1,Segment,Float64}(weights, [Tensors.Tensor{1,1}([x]) for x in points])
     LocalVirtualElement(degree, basis, quad)
 end
