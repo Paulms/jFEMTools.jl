@@ -74,15 +74,14 @@ Gref ≈ operators.elements[1].G
 
 K = assemble_K(operators)
 b = assemble_load(operators);
-boundaries = Boundaries(operators, b);
 
 # Boundary condition
 g(x::Tensors.Vec{2}) = (1 - x[1])*x[2]*sin(π * x[1]);
-dbc = Dirichlet(boundaries, "boundary", g)
-rhs = get_rhs(boundaries)
+dbc = Dirichlet(dofs,element,"boundary",g);
+apply!(K,b,dbc);
 
 #Solve
-x = K\rhs ;
+x = K\b;
 u = get_nodal_values(x, dofs);
 #Plot solution
 using Makie

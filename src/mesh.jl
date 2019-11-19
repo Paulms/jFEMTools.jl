@@ -74,6 +74,7 @@ end
 @inline getnvertices(mesh::PolytopalMesh) = length(mesh.vertices)
 @inline getverticesidx(mesh, cell_idx) = mesh.cells[cell_idx].vertices
 @inline getvertexset(mesh::PolytopalMesh, set::String) = mesh.vertexsets[set]
+@inline getedgeset(mesh::PolytopalMesh, set::String) = mesh.edgesets[set]
 getcells(mesh::PolytopalMesh) = mesh.cells
 function topology_elements(mesh,cellidx,element::Int)
     if element == 0
@@ -102,6 +103,10 @@ function getverticescoords(mesh::PolytopalMesh{dim,T}, cell_idx::Int) where {dim
         coords[i] = mesh.vertices[j].x
     end
     return coords
+end
+
+function getvertexcoords(mesh::PolytopalMesh{dim,T}, cell_idx::Int, vidx::Int) where {dim,T}
+    return mesh.vertices[mesh.cells[cell_idx].vertices[vidx]].x
 end
 
 function getverticescoords(mesh::PolytopalMesh{dim,T}, edge_idx::EdgeIndex) where {dim,T}

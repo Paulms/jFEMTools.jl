@@ -29,6 +29,7 @@ export VirtualElement,LocalVirtualElement
 export DofHandler
 export VEMOperators
 export assemble_K, assemble_M, assemble_load
+export Dirichlet, apply!
 
 include("quadrature.jl")
 include("tools.jl")
@@ -41,5 +42,6 @@ include("plot_recipes.jl")
 include("VirtualElement.jl")
 include("DofHandler.jl")
 include("VEMOperators.jl")
+include("boundary.jl")
 
 end # module
