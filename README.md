@@ -6,4 +6,9 @@
 [![Coverage Status](https://coveralls.io/repos/github/Paulms/jFEMTools.jl/badge.svg?branch=master)](https://coveralls.io/github/Paulms/jFEMTools.jl?branch=master)
 [![codecov.io](http://codecov.io/github/Paulms/jFEMTools.jl/coverage.svg?branch=master)](http://codecov.io/github/Paulms/jFEMTools.jl?branch=master)
 
-Tools for FEM code
+Tools for FEM and VEM code
+
+VEM implementation based on:
+
+- The Hitchhiker's Guide to the Virtual Element Method
+L. Beirão da Veiga, F. Brezzi, L. D. Marini, and A. Russo, Mathematical Models and Methods in Applied Sciences 2014 24:08, 1541-1573
