@@ -8,13 +8,13 @@ import Tensors
 using SparseArrays
 using LinearAlgebra
 
-mesh = rectangle_mesh(RectangleCell, (10,10), Tensors.Vec{2}((0.0,0.0)), Tensors.Vec{2}((1.0,1.0)));
+mesh = rectangle_mesh(RectangleCell, (2,2), Tensors.Vec{2}((0.0,0.0)), Tensors.Vec{2}((1.0,1.0)));
 
 function compute_u(mesh)
 # forcing function
-rhs(x::Tensors.Vec{2}) = 15 * sin(π * x[1]) * sin(π * x[2]);
+rhs(x::Tensors.Vec{2}) = 2*π^2*sin(π*x[1])*sin(π*x[2])
 # Boundary condition
-g(x::Tensors.Vec{2}) = (1 - x[1])*x[2]*sin(π * x[1]);
+g(x::Tensors.Vec{2}) = sin(π * x[2])*sin(π * x[1]);
 n_dofs = getnvertices(mesh)
 n_polys = 3; # Method has 1 degree of freedom per vertex
 assembler = start_assemble(n_dofs)

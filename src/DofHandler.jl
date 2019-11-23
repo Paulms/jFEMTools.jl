@@ -143,6 +143,20 @@ function celldofs!(global_dofs::Vector{Int}, dh::DofHandler, i::Int)
     return global_dofs
 end
 
+function vertexdofs(dh::DofHandler, element::VirtualElement)
+    dofs = Vector{Int}(undef,getnvertices(dh.mesh))
+    for (ci, cell) in enumerate(getcells(dh.mesh))
+        nv = gettopology(cell, element)[0]
+        for i in dh.cell_dofs_offset[ci]:(dh.cell_dofs_offset[ci]+nv-1)
+            dof = dh.cell_dofs[i]
+            if !(dof ∈ dofs)
+                dofs[cell.vertices[i-dh.cell_dofs_offset[ci]+1]] = dof
+            end
+        end
+    end
+    return dofs
+end
+
 # Creates a sparsity pattern from the dofs in a DofHandler.
 # Returns a sparse matrix with the correct storage pattern.
 """

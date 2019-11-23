@@ -290,18 +290,23 @@ end
 function _compute_local_b(element::LocalVirtualElement, dof::DofHandler{2}, cache::CellCache{2})
   cell = cache.cell; ci = cache.ci; load_func = cache.f
   degree = get_degree(element)
-  nk = Int((degree+1)*(degree+2)/2)
-  b = zeros(nk)
-
-  for i in 1:nk, j in 1:nk
-      for k in cache.tess
-        pt = mapPointsFromReference(RefSimplex,k,cache.quad.points);
-        for g=1:size(pt,1)
-          b[i] = b[i] + 2*simplex_area(k)*
-            cache.quad.weights[g]*
-            ( value(element.Pk_basis, i, pt[g])* load_func(pt[g]))
+  if degree == 1
+    ndofs = ndofs_per_cell(dof, ci)
+    b = load_func(element.Pk_basis.centroid)*ones(ndofs)*cell_volume(dof.mesh, ci)/getnedges(cell)
+  else
+    #TODO: Should we use k-1?
+    nk = Int((degree+1)*(degree+2)/2)
+    b = zeros(nk)
+    for i in 1:nk
+        for k in cache.tess
+          pt = mapPointsFromReference(RefSimplex,k,cache.quad.points);
+          for g=1:size(pt,1)
+            b[i] = b[i] + 2*simplex_area(k)*
+              cache.quad.weights[g]*
+              ( value(element.Pk_basis, i, pt[g])* load_func(pt[g]))
+          end
         end
-      end
+    end
   end
   return b
 end
@@ -310,7 +315,9 @@ function assemble_load(op::VEMOperators)
       b = zeros(ndofs(op.dofs))
       for k = 1:getncells(op.dofs.mesh)
         cell_dofs = Vector{Int}(undef, ndofs_per_cell(op.dofs, k))
-        if get_order(op.elements[k])  < 3
+        if get_order(op.elements[k]) == 1
+          b_local = op.elements[k].b
+        elseif get_order(op.elements[k])  < 3
           # In this case: Π^∇ = Π^0
           Π∇s = op.elements[k].G\op.elements[k].B
           b_local = Π∇s'*op.elements[k].b
