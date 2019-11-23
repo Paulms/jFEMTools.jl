@@ -7,6 +7,12 @@ os:
 julia:
   - 1.2
   - nightly
+
+matrix:
+  allow_failures:
+    - os: windows
+    - os: osx
+
 notifications:
   email: false
 after_success:
