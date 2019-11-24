@@ -1,4 +1,4 @@
-struct VirtualElement{dim}
+struct VirtualElement{dim} <: AbstractElement
     degree::Int
 end
 
@@ -33,6 +33,11 @@ get_degree(el::LocalVirtualElement) = el.degree
 function gettopology(cell::Cell{2,V,E,M}, element::VirtualElement) where {V,E,M}
     deg = get_degree(element)
     Dict(0=> V, 1=> V*(deg-1), 2=> Int((deg-1)*deg/2))
+end
+
+function getnlocaldofs(element::VirtualElement{2}, cell::Cell{2,V,E,M}) where {V,E,M}
+    k = get_degree(element)
+    V*k+(k-1)*k/2
 end
 
 function spatial_nodal_coordinate(mesh, ci::Int,element::VirtualElement{2},i::Int) where {V,E,M}

@@ -7,10 +7,11 @@
     mesh = unitSquareMesh(TriangleCell, (2,2));
     dim = 2
     element = VirtualElement(dim,1);
-    dh = DofHandler(mesh, element);
+    u = TrialFunction(element)
+    dh = DofHandler(mesh, u);
 
     # ### Boundary conditions
-    dbc = Dirichlet(dh,element,"boundary",x -> 0);
+    dbc = Dirichlet(dh,u,"boundary",x -> 0);
     @test dbc.prescribed_dofs == [1,2,3,5,6,7,8,9]
     @test dbc.values == zeros(8)
     K = sparse(I(9)); b = ones(9);

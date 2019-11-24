@@ -12,6 +12,9 @@ import VoronoiDelaunay
 import PlanarConvexHulls
 import StaticArrays
 
+# Abstract types
+abstract type AbstractElement end
+
 # Mesh related functions
 export  rectangle_mesh, RectangleCell, TriangleCell,
         getncells, getverticesidx, getverticescoords,
@@ -22,6 +25,9 @@ export  rectangle_mesh, RectangleCell, TriangleCell,
 # Assembler
 export  start_assemble, assemble!,
         end_assemble
+# TrialFunctions
+export TrialFunction
+
 # Element
 export VirtualElement,LocalVirtualElement
 
@@ -37,6 +43,7 @@ include("StrangQuad.jl")
 include("Interpolations.jl")
 include("mesh.jl")
 include("mesh_generator.jl")
+include("functions.jl")
 include("assembler.jl")
 include("plot_recipes.jl")
 include("VirtualElement.jl")

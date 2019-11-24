@@ -4,7 +4,8 @@ struct Dirichlet{T}  #<: Constraint
     values::Vector{T}
 end
 
-function Dirichlet(dh::DofHandler{2}, element::VirtualElement{2}, edgeset::String,f::Union{Function,Real})
+function Dirichlet(dh::DofHandler{2}, u::TrialFunction, edgeset::String,f::Union{Function,Real})
+    element = u.element
     edgeset = getedgeset(dh.mesh, edgeset)
     prescribed_dofs = Vector{Int}()
     values = Vector{Float64}()
@@ -14,7 +15,7 @@ function Dirichlet(dh::DofHandler{2}, element::VirtualElement{2}, edgeset::Strin
         cell_topology = gettopology(cell, element)
         edge_lidx = edge_idx.idx
         l_dof = Int[]
-        offset::Int = dh.cell_dofs_offset[cell_idx] - 1 + field_offset(dh, :u)
+        offset::Int = dh.cell_dofs_offset[cell_idx] - 1 + field_offset(dh, u, cell_idx)
         for j = 1:2 #Add vertex dofs
             local_offset = reference_edge_vertices(typeof(cell))[edge_lidx][j]
             if !(dh.cell_dofs[offset+local_offset] ∈ prescribed_dofs)
@@ -37,14 +38,14 @@ function Dirichlet(dh::DofHandler{2}, element::VirtualElement{2}, edgeset::Strin
     return Dirichlet(prescribed_dofs[p], values[p])
 end
 
-function _push_values!(values::Vector, cell::Int, mesh,l_dof::Vector{Int}, felem::VirtualElement, f::Function)
+function _push_values!(values::Vector, cell::Int, mesh,l_dof::Vector{Int}, felem::AbstractElement, f::Function)
     for i in l_dof
         vals = f(spatial_nodal_coordinate(mesh,cell,felem,i))
         push!(values,vals)
     end
 end
 
-function _push_values!(values::Vector, cell::Int, mesh,l_dof::Vector{Int}, felem::VirtualElement, vals::Real)
+function _push_values!(values::Vector, cell::Int, mesh,l_dof::Vector{Int}, felem::AbstractElement, vals::Real)
     for i in l_dof
         push!(values,vals)
     end

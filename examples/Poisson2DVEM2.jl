@@ -9,20 +9,21 @@ rhs(x::Tensors.Vec{2}) = 2*π^2*sin(π*x[1])*sin(π*x[2])
 degree = 2;
 dim = 2;
 element = VirtualElement(dim,degree);
-dofs = DofHandler(mesh, element);
-operators = VEMOperators(dofs, element;load = rhs);
+u = TrialFunction(element)
+dofs = DofHandler(mesh, u);
+operators = VEMOperators(dofs, u;load = rhs);
 
-K = assemble_K(operators)
+K = assemble_K(operators);
 b = assemble_load(operators);
 
 # Boundary condition
 g(x::Tensors.Vec{2}) = sin(π * x[2])*sin(π * x[1]);
-dbc = Dirichlet(dofs,element,"boundary",g);
+dbc = Dirichlet(dofs,u,"boundary",g);
 apply!(K,b,dbc);
 
 #Solve
 x = K\b
-vi = jFEMTools.vertexdofs(dofs, element)
+vi = jFEMTools.vertexdofs(dofs, u)
 
 # Compute exact solution
 nv = getnvertices(mesh)

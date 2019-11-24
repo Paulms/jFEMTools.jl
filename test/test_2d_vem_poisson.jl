@@ -12,8 +12,9 @@
     degree = 1;
     dim = 2;
     element = VirtualElement(dim,degree);
-    dofs = DofHandler(mesh, element);
-    operators = VEMOperators(dofs, element;load = rhs);
+    u = TrialFunction(element)
+    dofs = DofHandler(mesh, u);
+    operators = VEMOperators(dofs, u;load = rhs);
     # Test
     d = sqrt(2)
     Bref = 1/4*[1 1 1 1;
@@ -38,8 +39,9 @@
     degree = 2
     dim = 2
     element = VirtualElement(dim,degree)
-    dofs = DofHandler(mesh, element)
-    operators = VEMOperators(dofs, element;load = rhs)
+    u = TrialFunction(element)
+    dofs = DofHandler(mesh, u)
+    operators = VEMOperators(dofs, u;load = rhs)
     # Test
     d = sqrt(2)
     Bref = 1/12*[0 0 0 0 0 0 0  0 12;
