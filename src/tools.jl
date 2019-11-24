@@ -10,11 +10,10 @@ end
 """ Compute volume of a simplex spanned by vertices `verts` """
 function simplex_area(verts::Vector{Tensors.Vec{N, T}}) where {N,T}
     # Volume of reference simplex element is 1/n!
-    n = length(verts) - 1
-    ref_verts = reference_coordinates(RefSimplex, Val{n})
+    ref_verts = reference_coordinates(RefSimplex, Val{N})
     A, b = get_affine_map(ref_verts, verts)
     F = svd(A)
-    return *(F.S...)/factorial(n)
+    return *(F.S...)/factorial(N)
 end
 
 """ Map points points from reference simplex to simplex K """
@@ -29,24 +28,44 @@ get_affine_map(x, ξ)
 Get (A,b) such that ξ = A * x + b is the affine
 mapping from the simplex with vertices x to the simplex of vertices ξ.
 """
+# function get_affine_map(x, ξ)
+#     @assert length(x[1]) == length(ξ[1]) "dimension mismatch"
+#     n = length(x[1])
+#     T = eltype(x[1])
+#
+#     B = zeros(T, n*(n+1), n*(n+1))
+#     L = zeros(T, n*(n+1))
+#
+#     for i in 1:length(x)
+#         for j in 1:n
+#             row = (i-1) * n + j
+#             B[row, n*(j-1)+1:n*j] = x[i]
+#             L[row] = ξ[i][j]
+#             B[row, n * n + j] = one(T)
+#         end
+#     end
+#     X = B\L
+#     return reshape(X[1:n*n], (n, n)), X[n*n+1:end]
+# end
 function get_affine_map(x, ξ)
     @assert length(x[1]) == length(ξ[1]) "dimension mismatch"
     n = length(x[1])
     T = eltype(x[1])
-
-    B = zeros(T, n*(n+1), n*(n+1))
-    L = zeros(T, n*(n+1))
-
-    for i in 1:length(x)
-        for j in 1:n
-            row = (i-1) * n + j
-            B[row, n*(j-1)+1:n*j] = x[i]
-            L[row] = ξ[i][j]
-            B[row, n * n + j] = one(T)
+    A = zeros(T,n,n)
+    b = zeros(T,n)
+    K = zeros(n+1,n+1)
+    c = zeros(n+1)
+    for i in 1:n
+        K[:,n+1] .= 1
+        for j in 1:size(x,1)
+            K[j,1:n] .= x[j]
+            c[j] = ξ[j][i]
         end
+        a = K\c
+        A[i,:] .= a[1:n]
+        b[i] = a[n+1]
     end
-    X = B\L
-    return reshape(X[1:n*n], (n, n)), X[n*n+1:end]
+    return A,b
 end
 
 """ Tesselate convex 2D shape with `vertices` using Delaunay """

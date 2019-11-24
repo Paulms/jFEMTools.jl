@@ -1,15 +1,12 @@
 @testset "Test 2d vem poisson" begin
 
     using jFEMTools
-
     import Tensors
-    using SparseArrays
-    using LinearAlgebra
 
-    mesh = unitSquareMesh(RectangleCell, (1,1));
+    mesh = unitSquareMesh(RectangleCell, (1,1))
 
     # forcing function
-    rhs(x::Tensors.Vec{2}) = 15 * sin(π * x[1]) * sin(π * x[2]);
+    rhs(x::Tensors.Vec{2}) = 2*π^2*sin(π*x[1])*sin(π*x[2])
 
     # Test for order = 1
     degree = 1;
@@ -38,11 +35,11 @@
     @test Gref ≈ operators.elements[1].G
 
     # Test order 2 implementation
-    degree = 2;
-    dim = 2;
-    element = VirtualElement(dim,degree);
-    dofs = DofHandler(mesh, element);
-    operators = VEMOperators(dofs, element;load = rhs);
+    degree = 2
+    dim = 2
+    element = VirtualElement(dim,degree)
+    dofs = DofHandler(mesh, element)
+    operators = VEMOperators(dofs, element;load = rhs)
     # Test
     d = sqrt(2)
     Bref = 1/12*[0 0 0 0 0 0 0  0 12;
