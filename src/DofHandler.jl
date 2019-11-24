@@ -56,12 +56,12 @@ end
 
 Return the local dof range for `u`.
 """
-function dof_range(dh::DofHandler, field::Symbol)
-    f = find_field(dh, field)
-    offset = field_offset(dh, field)
-    n_field_dofs = getnlocaldofs(dh.variables[f])::Int
-    return (offset+1):(offset+n_field_dofs)
-end
+# function dof_range(dh::DofHandler, field::Symbol)
+#     f = find_field(dh, field)
+#     offset = field_offset(dh, field)
+#     n_field_dofs = getnlocaldofs(dh.variables[f])
+#     return (offset+1):(offset+n_field_dofs)
+# end
 
 # close the DofHandler and distribute all the dofs
 #TODO: This only work for D < 3
