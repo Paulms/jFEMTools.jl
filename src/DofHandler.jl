@@ -145,7 +145,7 @@ end
 
 function vertexdofs(dh::DofHandler, u::TrialFunction)
     element = u.element
-    dofs = Vector{Int}(undef,getnvertices(dh.mesh))
+    dofs = zeros(Int,getnvertices(dh.mesh))
     for (ci, cell) in enumerate(getcells(dh.mesh))
         nv = gettopology(cell, element)[0]*u.components
         for i in dh.cell_dofs_offset[ci]:(dh.cell_dofs_offset[ci]+nv-1)

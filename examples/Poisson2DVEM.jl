@@ -65,7 +65,8 @@ end
 u = compute_u(mesh)
 
 #plot solution
-using Makie, AbstractPlotting
+using Makie
+import AbstractPlotting
 using ColorSchemes
 include("../src/plot_recipes.jl")
 scene = Scene(resolution = (400, 200), colormap = ColorSchemes.viridis.colors)
