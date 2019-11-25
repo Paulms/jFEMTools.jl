@@ -51,4 +51,8 @@ include("DofHandler.jl")
 include("VEMOperators.jl")
 include("boundary.jl")
 
+# SnoopCompile output
+include("precompile.jl")
+_precompile_()
+
 end # module
