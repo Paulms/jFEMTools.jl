@@ -4,7 +4,6 @@ authors = ["Paul Mendez <pmendez@ing-mat.udec.cl>"]
 version = "0.1.0"
 
 [deps]
-AbstractPlotting = "537997a7-5e4e-5d89-9595-2241ea00577e"
 FastGaussQuadrature = "442a2c76-b920-505d-bb47-c5924d526838"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 PlanarConvexHulls = "145d500b-351c-58b3-a0aa-f5d7e249d989"
@@ -14,7 +13,6 @@ Tensors = "48a634ad-e948-5137-8d70-aa71f2a747f4"
 VoronoiDelaunay = "72f80fcb-8c52-57d9-aff0-40c1a3526986"
 
 [compat]
-AbstractPlotting = "0.9"
 FastGaussQuadrature = "0.4"
 PlanarConvexHulls = "0.3"
 StaticArrays = "0.12"

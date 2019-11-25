@@ -4,8 +4,6 @@ using SparseArrays
 using LinearAlgebra
 import Base:@propagate_inbounds
 import Tensors
-import AbstractPlotting
-import AbstractPlotting: Plot, default_theme, plot!, SceneLike, Theme, to_value, Point2f0, poly!
 import Base.ht_keyindex2!
 import FastGaussQuadrature
 import VoronoiDelaunay
@@ -45,7 +43,7 @@ include("mesh.jl")
 include("mesh_generator.jl")
 include("functions.jl")
 include("assembler.jl")
-include("plot_recipes.jl")
+#include("plot_recipes.jl")
 include("VirtualElement.jl")
 include("DofHandler.jl")
 include("VEMOperators.jl")

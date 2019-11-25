@@ -23,18 +23,20 @@ apply!(K,b,dbc);
 
 #Solve
 x = K\b
-vi = jFEMTools.vertexdofs(dofs, u)
-
-# Compute exact solution
-nv = getnvertices(mesh)
-vv = get_vertices_matrix(mesh)
-xx = [g(vv.x) for vv in mesh.vertices];
 
 #Plot solution
 using Makie
+import AbstractPlotting
+include("../src/plot_recipes.jl")
 #popdisplay(AbstractPlotting.PlotDisplay())
 #AbstractPlotting.inline!(true)
 scene = Scene(resolution = (400, 200))
+# Plot approximation
+vi = jFEMTools.vertexdofs(dofs, u)
 plot!(scene, mesh, color = x[vi])
+
+#Plot exact solution
+vv = get_vertices_matrix(mesh)
+xx = [g(vv.x) for vv in mesh.vertices];
 plot!(scene, mesh, color = xx)
 #display(scene)

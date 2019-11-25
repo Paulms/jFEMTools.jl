@@ -1,3 +1,8 @@
+#Makie
+import AbstractPlotting
+import AbstractPlotting: Plot, default_theme, plot!, SceneLike, Theme, to_value, Point2f0, poly!
+
+
 function default_theme(scene::SceneLike, ::Type{<: Plot(PolytopalMesh)})
      Theme(
         color = :white, strokewidth = 1, strokecolor = :black, colorrange=(0.0,1.0)
