@@ -7,31 +7,11 @@ function _generate_2d_hex_centroids(T,LL, n_centroid_rows, n_centroid_cols, hex_
             push!(centroids, centroid)
             x_coord = x_coord + hex_width
         end
-        y_coord = y_coord + hex_heigth
+        y_coord = y_coord + hex_heigth*3/4
         x_coord = LL[1] + max(0,sign*hex_width/2)
         sign =  -sign;
     end
     return centroids
-end
-
-function _gen_up_pentagon(centroid,hex_width,hex_heigth)
-    return [
-        Vertex(Tensors.Vec{2}((centroid[1]-hex_width/2,centroid[2]))),
-        Vertex(Tensors.Vec{2}((centroid[1]+hex_width/2,centroid[2]))),
-        Vertex(Tensors.Vec{2}((centroid[1]+hex_width/2,centroid[2]+hex_heigth/4))),
-        Vertex(Tensors.Vec{2}((centroid[1],centroid[2]+hex_heigth/2))),
-        Vertex(Tensors.Vec{2}((centroid[1]-hex_width/2,centroid[2]+hex_heigth/4))),
-    ]
-end
-
-function _gen_down_pentagon(centroid,hex_width,hex_heigth)
-    return [
-        Vertex(Tensors.Vec{2}((centroid[1]-hex_width/2,centroid[2]))),
-        Vertex(Tensors.Vec{2}((centroid[1]-hex_width/2,centroid[2]-hex_heigth/4))),
-        Vertex(Tensors.Vec{2}((centroid[1],centroid[2]-hex_heigth/2))),
-        Vertex(Tensors.Vec{2}((centroid[1]+hex_width/2,centroid[2]-hex_heigth/4))),
-        Vertex(Tensors.Vec{2}((centroid[1]+hex_width/2,centroid[2]))),
-    ]
 end
 
 function _gen_hexagon(centroid,LL,UR,hex_width,hex_heigth)
@@ -43,8 +23,34 @@ function _gen_hexagon(centroid,LL,UR,hex_width,hex_heigth)
         Vertex(Tensors.Vec{2}((centroid[1],centroid[2]+hex_heigth/2))),
         Vertex(Tensors.Vec{2}((centroid[1]-hex_width/2,centroid[2]+hex_heigth/4))),
     ]
-    filter_verts = filter(x->(x.x[1]>=LL[1] && x.x[1]<=UR[1]),hex_verts)
-    return size(filter_verts,1) < 4 ? (Vertex(centroid), filter_verts...) : filter_verts
+    filter_verts = filter(x->(x.x[1]>=LL[1] && x.x[1]<=UR[1]
+                          && x.x[2]>=LL[2] && x.x[2] <= UR[2]),hex_verts)
+    if size(filter_verts,1) == 2 #corners case
+        x = centroid[1] + (centroid[1] == LL[1] ? hex_width/2 : -hex_width/2)
+        new_vertex = Vertex(Tensors.Vec{2}((x, centroid[2])))
+        if centroid == LL
+            filter_verts = (Vertex(centroid),new_vertex,filter_verts...)
+        elseif centroid[2] == LL[2] && centroid[1] == UR[1]
+            filter_verts = (new_vertex,Vertex(centroid),filter_verts...)
+        elseif centroid[2] == UR[2] && centroid[1] == LL[1]
+            filter_verts = (Vertex(centroid),filter_verts...,new_vertex)
+        elseif centroid == UR
+            filter_verts = (new_vertex,filter_verts...,Vertex(centroid))
+        else
+            throw("error on hexagon at corner $centroid")
+        end
+    elseif size(filter_verts,1) == 3 #top and bottom pentagon case
+        nv1 = Vertex(Tensors.Vec{2}((centroid[1]-hex_width/2, centroid[2])))
+        nv2 = Vertex(Tensors.Vec{2}((centroid[1]+hex_width/2, centroid[2])))
+        if centroid[2] == LL[2]
+            filter_verts = (nv1,nv2,filter_verts...)
+        elseif centroid[2] == UR[2]
+            filter_verts = (nv1,filter_verts...,nv2)
+        else
+            throw("error at bottom centroid $centroid")
+        end
+    end
+    return filter_verts
 end
 
 function _push_cell_vertex!(vert,cell_verts, used_vertices,vertices,nextvert)
@@ -77,45 +83,11 @@ function rectangle_mesh(::Type{HexagonCell}, nel::NTuple{2,Int}, LL::Tensors.Vec
 
     cells = Cell[]
     used_vertices = Dict{Vertex,Int}()
-    #Add first row
-
+    #Add cells
     nextvert = 1 # next free vertex to use
-    cell_verts = [
-        Vertex(centroids[1]),
-        Vertex(Tensors.Vec{2}((centroids[1][1]+hex_width/2,centroids[1][2]))),
-        Vertex(Tensors.Vec{2}((centroids[1][1]+hex_width/2,centroids[1][2]+hex_heigth/4))),
-        Vertex(Tensors.Vec{2}((centroids[1][1],centroids[1][2]+hex_heigth/2)))
-    ]
-    cell_verts_idx = Int[]
-    for vert in cell_verts
-        nextvert = _push_cell_vertex!(vert,cell_verts_idx, used_vertices,vertices,nextvert)
-    end
-    push!(cells,Cell{2,4,4,1}(Tuple(cell_verts_idx)))
-    c_i = 2
-    for i in 1:(n_centroid_cols-1)
-        cell_verts = Int[]
-        for vert in _gen_up_pentagon(centroids[c_i],hex_width,hex_heigth)
-            nextvert = _push_cell_vertex!(vert,cell_verts, used_vertices,vertices,nextvert)
-        end
-        push!(cells,Cell{2,5,5,1}(Tuple(cell_verts)))
-        c_i +=1
-    end
-    cell_verts = [
-        Vertex(Tensors.Vec{2}((centroids[c_i][1]-hex_width/2,centroids[c_i][2]))),
-        Vertex(centroids[c_i]),
-        Vertex(Tensors.Vec{2}((centroids[c_i][1],centroids[c_i][2]+hex_heigth/2))),
-        Vertex(Tensors.Vec{2}((centroids[c_i][1]-hex_width/2,centroids[c_i][2]+hex_heigth/4)))
-    ]
-    cell_verts_idx = Int[]
-    for vert in cell_verts
-        nextvert = _push_cell_vertex!(vert,cell_verts_idx, used_vertices,vertices,nextvert)
-    end
-    push!(cells,Cell{2,4,4,1}(Tuple(cell_verts_idx)))
-    c_i+1
-
-    # Add middle rows
-    sign = -1
-    for j in 1:(n_centroid_rows-2)
+    c_i = 1
+    sign = 1
+    for j in 0:(n_centroid_rows-1)
         for i in 0:(sign > 0 ? n_centroid_cols : n_centroid_cols-1)
             cell_verts = Int[]
             for vert in _gen_hexagon(centroids[c_i],LL,UR,hex_width,hex_heigth)
@@ -127,40 +99,6 @@ function rectangle_mesh(::Type{HexagonCell}, nel::NTuple{2,Int}, LL::Tensors.Vec
         end
         sign =  -sign;
     end
-
-    #Add final row
-    cell_verts = [
-        Vertex(Tensors.Vec{2}((centroids[c_i][1],centroids[c_i][2]-hex_heigth/2))),
-        Vertex(Tensors.Vec{2}((centroids[c_i][1]+hex_width/2,centroids[c_i][2]-hex_heigth/4))),
-        Vertex(Tensors.Vec{2}((centroids[c_i][1]+hex_width/2,centroids[c_i][2]))),
-        Vertex(centroids[c_i])
-    ]
-    cell_verts_idx = Int[]
-    for vert in cell_verts
-        nextvert = _push_cell_vertex!(vert,cell_verts_idx, used_vertices,vertices,nextvert)
-    end
-    push!(cells,Cell{2,4,4,1}(Tuple(cell_verts_idx)))
-    c_i +=1
-    for i in 1:(n_centroid_cols-1)
-        cell_verts = Int[]
-        for vert in _gen_down_pentagon(centroids[c_i],hex_width,hex_heigth)
-            nextvert = _push_cell_vertex!(vert,cell_verts, used_vertices,vertices,nextvert)
-        end
-        push!(cells,Cell{2,5,5,1}(Tuple(cell_verts)))
-        c_i +=1
-    end
-    cell_verts = [
-        Vertex(Tensors.Vec{2}((centroids[c_i][1]-hex_width/2,centroids[c_i][2]-hex_heigth/4))),
-        Vertex(Tensors.Vec{2}((centroids[c_i][1],centroids[c_i][2]-hex_heigth/2))),
-        Vertex(centroids[c_i]),
-        Vertex(Tensors.Vec{2}((centroids[c_i][1]-hex_width/2,centroids[c_i][2])))
-    ]
-    cell_verts_idx = Int[]
-    for vert in cell_verts
-        nextvert = _push_cell_vertex!(vert,cell_verts_idx, used_vertices,vertices,nextvert)
-    end
-    push!(cells,Cell{2,4,4,1}(Tuple(cell_verts_idx)))
-
 
     # Cell edges
 
@@ -179,3 +117,12 @@ LL = Tensors.Vec{2}((0.0,0.0))
 UR = Tensors.Vec{2}((6.0,6.0))
 
 mesh = rectangle_mesh(HexagonCell,(3,3),LL,UR)
+
+#Plot mesh
+using Makie
+import AbstractPlotting
+include("../src/plot_recipes.jl")
+#popdisplay(AbstractPlotting.PlotDisplay())
+#AbstractPlotting.inline!(true)
+scene = Scene(resolution = (400, 200))
+plot!(scene, mesh)
