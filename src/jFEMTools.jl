@@ -14,7 +14,7 @@ import StaticArrays
 abstract type AbstractElement end
 
 # Mesh related functions
-export  rectangle_mesh, RectangleCell, TriangleCell,
+export  rectangle_mesh, RectangleCell, TriangleCell, HexagonCell,
         getncells, getverticesidx, getverticescoords,
         getnedges, cell_volume, cell_centroid, cell_diameter,
         mapToGlobalIdx, getvertexset, getvertexcoords,

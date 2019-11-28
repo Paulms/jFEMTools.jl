@@ -38,7 +38,10 @@ const RectangleCell = Cell{2,4,4,1}
 @inline get_cell_name(::RectangleCell) = "Rectangle"
 @inline reference_edge_vertices(::Type{RectangleCell}) = ((1,2),(2,3),(3,4),(4,1))
 
-@inline reference_edge_vertices(::Type{Cell{2, N}})  where {N} = ((i,mod1(i+1,N)) for i in 1:N)
+@inline reference_edge_vertices(::Type{Cell{2,N,N,1}})  where {N} = Tuple((i,mod1(i+1,N)) for i in 1:N)
+
+const HexagonCell = Cell{2,6,6,1}
+@inline get_cell_name(::HexagonCell) = "Hexagon"
 
 # API
 @inline getnvertices(cell::Cell{dim,N}) where {dim,N} = N

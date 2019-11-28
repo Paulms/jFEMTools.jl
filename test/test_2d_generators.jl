@@ -1,6 +1,7 @@
 @testset "Test 2d mesh generators" begin
 using jFEMTools
 import Tensors
+jF = jFEMTools
 #Test generated mesh
 mesh = rectangle_mesh(TriangleCell, (2,2), Tensors.Vec{2}((0.0,0.0)), Tensors.Vec{2}((1.0,1.0)))
 @test getncells(mesh) == 8
@@ -20,6 +21,15 @@ end
 
 # Quad mesh
 mesh = rectangle_mesh(RectangleCell, (2,2), Tensors.Vec{2}((0.0,0.0)), Tensors.Vec{2}((1.0,1.0)))
+
+# Hex mesh
+mesh = unitSquareMesh(HexagonCell,(3,3))
+@test getncells(mesh) == 18
+@test getnvertices(mesh) == 38
+# Test boundary sets
+@test jF.getedgeset(mesh,"top") == Set((jF.EdgeIndex(15,3),jF.EdgeIndex(16,4),jF.EdgeIndex(17,4),jF.EdgeIndex(18,3)))
+# Check expected data for cell 1
+@test getnedges(mesh.cells[1]) == 4
 
 # Mixed mesh
 cells = [
