@@ -331,7 +331,8 @@ function assemble_load(op::VEMOperators)
       return b
 end
 
-function assemble_K(op::VEMOperators)
+""" Compute stiffness Matrix """
+function assemble_stiffnessMat(op::VEMOperators)
     K = create_sparsity_pattern(op.dofs);
     assembler = start_assemble(K)
     for k = 1:getncells(op.dofs.mesh)
@@ -353,7 +354,7 @@ function assemble_K(op::VEMOperators)
 end
 
 """ Compute Mass Matrix """
-function assemble_M(op::VEMOperators)
+function assemble_massMat(op::VEMOperators)
   M = create_sparsity_pattern(op.dofs);
   assembler = start_assemble(M)
 

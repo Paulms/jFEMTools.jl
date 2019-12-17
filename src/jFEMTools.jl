@@ -32,7 +32,7 @@ export VirtualElement,LocalVirtualElement
 #VEM utils
 export DofHandler
 export VEMOperators
-export assemble_K, assemble_M, assemble_load
+export assemble_stiffnessMat, assemble_massMat, assemble_load
 export Dirichlet, apply!
 
 include("quadrature.jl")

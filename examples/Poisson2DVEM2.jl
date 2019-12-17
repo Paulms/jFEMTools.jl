@@ -13,7 +13,7 @@ u = TrialFunction(element)
 dofs = DofHandler(mesh, u);
 operators = VEMOperators(dofs, u;load = rhs);
 
-K = assemble_K(operators);
+K = assemble_stiffnessMat(operators);
 b = assemble_load(operators);
 
 # Boundary condition
