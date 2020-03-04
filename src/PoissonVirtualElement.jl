@@ -1,20 +1,20 @@
-struct VirtualElement{dim} <: AbstractElement
+struct PoissonVirtualElement{dim} <: AbstractElement
     degree::Int
 end
 
-function VirtualElement(dim = 2, degree=1)
-    VirtualElement{dim}(degree)
+function PoissonVirtualElement(dim = 2, degree=1)
+    PoissonVirtualElement{dim}(degree)
 end
 
-get_degree(el::VirtualElement) = el.degree
+get_degree(el::PoissonVirtualElement) = el.degree
 
-struct LocalVirtualElement
+struct LocalPoissonVirtualElement
     degree::Int
     Pk_basis::Monomials
     edge_quad::QuadratureRule
 end
 
-function LocalVirtualElement(dim, degree, centroid, diameter)
+function LocalPoissonVirtualElement(dim, degree, centroid, diameter)
     Pk_basis = Monomials(dim,degree,centroid, diameter)
     if degree == 1
         points = Vector{Float64}(); weights = Vector{Float64}()
@@ -25,22 +25,22 @@ function LocalVirtualElement(dim, degree, centroid, diameter)
         points = points .+ 1.0; points /= 2.0
     end
     quad = QuadratureRule{1,Segment,Float64}(weights, [Tensors.Tensor{1,1}([x]) for x in points])
-    LocalVirtualElement(degree, Pk_basis, quad)
+    LocalPoissonVirtualElement(degree, Pk_basis, quad)
 end
 
-get_degree(el::LocalVirtualElement) = el.degree
+get_degree(el::LocalPoissonVirtualElement) = el.degree
 
-function gettopology(cell::Cell{2,V,E,M}, element::VirtualElement) where {V,E,M}
+function gettopology(cell::Cell{2,V,E,M}, element::PoissonVirtualElement) where {V,E,M}
     deg = get_degree(element)
     Dict(0=> V, 1=> V*(deg-1), 2=> Int((deg-1)*deg/2))
 end
 
-function getnlocaldofs(element::VirtualElement{2}, cell::Cell{2,V,E,M}) where {V,E,M}
+function getnlocaldofs(element::PoissonVirtualElement{2}, cell::Cell{2,V,E,M}) where {V,E,M}
     k = get_degree(element)
     V*k+(k-1)*k/2
 end
 
-function spatial_nodal_coordinate(mesh, ci::Int,element::VirtualElement{2},i::Int) where {V,E,M}
+function spatial_nodal_coordinate(mesh, ci::Int,element::PoissonVirtualElement{2},i::Int) where {V,E,M}
     if i <= getnvertices(getcells(mesh)[ci]) #Vertices coordinates
         return getvertexcoords(mesh,ci,i)
     else     #Edge points coordinates

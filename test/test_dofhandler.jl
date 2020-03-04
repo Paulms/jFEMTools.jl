@@ -5,7 +5,7 @@ using SparseArrays
 
 mesh = unitSquareMesh(TriangleCell, (2,2));
 dim = 2
-element = VirtualElement(dim,1);
+element = PoissonVirtualElement(dim,1);
 u = TrialFunction(element)
 dh = DofHandler(mesh, u);
 

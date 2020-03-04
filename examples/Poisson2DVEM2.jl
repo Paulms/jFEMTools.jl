@@ -8,7 +8,7 @@ rhs(x::Tensors.Vec{2}) = 2*π^2*sin(π*x[1])*sin(π*x[2])
 
 degree = 2;
 dim = 2;
-element = VirtualElement(dim,degree);
+element = PoissonVirtualElement(dim,degree);
 u = TrialFunction(element)
 dofs = DofHandler(mesh, u);
 operators = VEMOperators(dofs, u;load = rhs);

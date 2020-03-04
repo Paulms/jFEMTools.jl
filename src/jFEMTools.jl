@@ -27,7 +27,7 @@ export  start_assemble, assemble!,
 export TrialFunction
 
 # Element
-export VirtualElement,LocalVirtualElement
+export PoissonVirtualElement,LocalPoissonVirtualElement
 
 #VEM utils
 export DofHandler
@@ -44,7 +44,7 @@ include("mesh_generator.jl")
 include("functions.jl")
 include("assembler.jl")
 #include("plot_recipes.jl")
-include("VirtualElement.jl")
+include("PoissonVirtualElement.jl")
 include("DofHandler.jl")
 include("VEMOperators.jl")
 include("boundary.jl")
