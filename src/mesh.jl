@@ -1,22 +1,6 @@
 abstract type AbstractPolytopalMesh end
 abstract type AbstractCell{dim,V,F} end
 
-"""
-A `FaceIndex` wraps an (Int, Int) and defines a face by pointing to a (cell, face).
-"""
-struct FaceIndex
-    cellidx::Int
-    idx::Int
-end
-
-"""
-A `EdgeIndex` wraps an (Int, Int) and defines an edge by pointing to a (cell, edge).
-"""
-struct EdgeIndex
-    cellidx::Int
-    idx::Int
-end
-
 # Vertices
 struct Vertex{dim,T}
     x::Tensors.Vec{dim, T}
@@ -71,11 +55,16 @@ function PolytopalMesh(cells,
     return PolytopalMesh(cells, vertices, cellsets, facesets, edgesets, vertexsets)
 end
 
+# Generic Interface
+getfacet(mesh::PolytopalMesh, facet) = facet
+getdim(mesh::PolytopalMesh{dim}) where {dim} = dim
+getncellvertices(mesh::PolytopalMesh, cell_idx) = getnvertices(mesh.cells[cell_idx])
+
 # API
 
 @inline getncells(mesh::PolytopalMesh) = length(mesh.cells)
 @inline getnvertices(mesh::PolytopalMesh) = length(mesh.vertices)
-@inline getverticesidx(mesh, cell_idx) = mesh.cells[cell_idx].vertices
+@inline getverticesidx(mesh::PolytopalMesh, cell_idx) = mesh.cells[cell_idx].vertices
 @inline getvertexset(mesh::PolytopalMesh, set::String) = mesh.vertexsets[set]
 @inline getedgeset(mesh::PolytopalMesh, set::String) = mesh.edgesets[set]
 getcells(mesh::PolytopalMesh) = mesh.cells
@@ -93,7 +82,7 @@ end
 function getcoords(mesh, vertex_idx::Int)
 Return a Tensor.Vec with the coordinates of vertex with index `vertex_idx`
 """
-@inline getvertexcoords(mesh::PolytopalMesh, vertex_idx::Int) = mesh.vertices[vertex_idx].x
+getvertexcoords(mesh::PolytopalMesh, vertex_idx::Int) = mesh.vertices[vertex_idx].x
 
 """
     getverticescoords(mesh::PolytopalMesh, cell_idx)
@@ -128,27 +117,15 @@ function getverticesindices(mesh::PolytopalMesh{dim,T}, edge_idx::EdgeIndex) whe
     return [cell.vertices[ref_edge[i]] for i in 1:2]
 end
 
-function get_Normal(mesh::PolytopalMesh{dim,T}, edge_idx::EdgeIndex) where {dim,T}
-    coords = getverticescoords(mesh, edge_idx)
-    v1 =  coords[2] - coords[1]
-    n1 = Tensors.Vec{2}((v1[2], -v1[1]))
-    return n1/norm(n1)
-end
-
-function get_vertices_matrix(mesh::PolytopalMesh{dim,T,C}) where {dim,T,C}
-    vertices_m = Matrix{T}(undef,length(mesh.vertices),dim)
-    for (k,vertex) in enumerate(mesh.vertices)
-        vertices_m[k,:] = vertex.x
-    end
-    vertices_m
-end
-function get_conectivity_list(mesh::PolytopalMesh{dim,T,C}) where {dim,T,C}
+function get_cell_connectivity_list(mesh::PolytopalMesh{dim,T,C}) where {dim,T,C}
     cells_m = Vector()
     for k = 1:getncells(mesh)
         push!(cells_m,mesh.cells[k].vertices)
     end
     cells_m
 end
+
+###########
 
 function cell_volume(mesh::PolytopalMesh{2}, cell_idx::Int)
     N = getnvertices(mesh.cells[cell_idx])

@@ -5,6 +5,79 @@ const MeshVertex = MeshEntity{0}
 const MeshEdge = MeshEntity{1}
 const MeshFace = MeshEntity{2}
 
+#M = dim + 1
+struct MeshConectivity
+  indices::NTuple
+  offsets::NTuple
+end
+
+#dim1 = dim+1 (better solutions?)
+struct PolytopalMesh2{dim,T,dim1} #<: AbstractPolytopalMesh
+  entities::NTuple{dim1, Int}
+  vertices::Vector{Tensors.Vec{dim, T}} #   NTuple{dim, T}}
+  geometry::Dict{NTuple{2,Int},MeshConectivity}
+  # Sets
+  entitysets::Dict{Int,Dict{String,Set{Int}}}
+end
+
+#Generic Interface
+getfacet(mesh::PolytopalMesh2{dim}, facet) where {dim} = getcellsubentities(mesh,facet.cellidx,dim-1)[facet.idx]
+
+"Return coordinates keeping orientation"
+function getverticescoords(mesh::PolytopalMesh2{d}, edge::EdgeIndex) where {d}
+  return [mesh.vertices[i] for i in _local_edgesD(mesh,MeshEntity{d}(edge.cellidx))[edge.idx]]
+end
+
+function getverticescoords(mesh::PolytopalMesh2{d}, cell::Int) where {d}
+  return getverticescoords(mesh, MeshEntity{d}(cell))
+end
+
+getdim(mesh::PolytopalMesh2{dim}) where {dim} = dim
+
+function get_cell_connectivity_list(mesh::PolytopalMesh2{dim}) where {dim}
+  _unpack_connectivity(get_connectivity!(mesh,dim,0))
+end
+
+getncellvertices(mesh::PolytopalMesh2{dim}, cell_idx) where {dim} = getnvertices(mesh,MeshEntity{dim}(cell_idx))
+
+#Common API
+@inline getnentities(mesh::PolytopalMesh2,d) = mesh.entities[d+1]
+function getentities(mesh::PolytopalMesh2, d)
+  return [MeshEntity{d}(idx) for idx in 1:getnentities(mesh,d)]
+end
+getentityset(mesh::PolytopalMesh2, entity::Int, set::String) = mesh.entitysets[entity+1][set]
+
+getncells(mesh::PolytopalMesh2{dim}) where {dim} = getnentities(mesh,dim)
+getnvertices(mesh::PolytopalMesh2) = getnentities(mesh,0)
+getvertexset(mesh::PolytopalMesh2, set::String) = getentityset(mesh,0,set)
+getedgeset(mesh::PolytopalMesh2, set::String) = getentityset(mesh,1,set)
+getfacetset(mesh::PolytopalMesh2{dim}, set::String) where {dim} = getentityset(mesh,dim-1,set)
+getcells(mesh::PolytopalMesh2{dim}) where {dim} = getentities(mesh,dim)
+getvertices(mesh::PolytopalMesh2) = getentities(mesh,0)
+getedges(mesh::PolytopalMesh2) = getentities(mesh,1)
+getfacets(mesh::PolytopalMesh2{dim}) where {dim} = getentities(mesh,dim-1)
+
+function getcellsubentities(mesh::PolytopalMesh2{dim},cellidx,entity::Int) where {dim}
+  connectivity = get_connectivity!(mesh,dim,entity)
+  return [MeshEntity{entity}(idx) for idx in get_entity_indices(connectivity,cellidx)]
+end
+
+getvertexcoords(mesh::PolytopalMesh2, vertex_idx::Int) = mesh.vertices[vertex_idx]
+
+function getverticescoords(mesh::PolytopalMesh2, entity::MeshEntity)
+  return [mesh.vertices[i] for i in getverticesidx(mesh, entity)]
+end
+
+function getvertexcoords(mesh::PolytopalMesh2, entity::MeshEntity, vidx::Int)
+  return mesh.vertices[getverticesidx(mesh, entity)[vidx]]
+end
+function getnvertices(mesh,entity::MeshEntity{d}) where{d}
+  connectivity = get_connectivity!(mesh,d,0)
+  idx = entity.index
+  return connectivity.offsets[idx+1] - connectivity.offsets[idx]
+end
+
+#Internal
 function get_entity_name(entity,dim)
   if entity == 0
     return "vertex"
@@ -20,53 +93,6 @@ function get_entity_name(entity,dim)
     return "dim $entity"
   end
 end
-
-#M = dim + 1
-struct MeshConectivity
-  indices::NTuple
-  offsets::NTuple
-end
-
-#dim1 = dim+1 (better solutions?)
-struct PolytopalMesh2{dim,dim1,T} #<: AbstractPolytopalMesh
-  entities::NTuple{dim1, Int}
-  vertices::Vector{NTuple{dim, T}}
-  geometry::Dict{NTuple{2,Int},MeshConectivity}
-  # Sets
-  entitysets::Dict{Int,Dict{String,Set{Int}}}
-end
-
-#Common API
-getncells(mesh::PolytopalMesh2) = mesh.entities[end]
-getnvertices(mesh::PolytopalMesh2) = mesh.entities[1]
-getentityset(mesh::PolytopalMesh2, entity::Int, set::String) = mesh.entitysets[entity][set]
-getvertexset(mesh::PolytopalMesh2, set::String) = mesh.entitysets[0][set]
-getedgeset(mesh::PolytopalMesh2, set::String) = mesh.entitysets[1][set]
-function getcells(mesh::PolytopalMesh2{dim}) where {dim}
-  return [MeshEntity{dim}(idx) for idx in 1:getncells(mesh)]
-end
-
-@inline getnentities(mesh::PolytopalMesh2,d) = mesh.entities[d+1]
-function getentities(mesh::PolytopalMesh2, d)
-  return [MeshEntity{d}(idx) for idx in 1:getnentities(d)]
-end
-
-function topology_elements(mesh::PolytopalMesh2{dim},cellidx,element::Int) where {dim}
-  connectivity = get_connectivity!(mesh,dim,element)
-  return [MeshEntity{element}(idx) for idx in get_entity_indices(mesh,cellidx)]
-end
-
-getvertexcoords(mesh::PolytopalMesh2, vertex_idx::Int) = mesh.vertices[vertex_idx]
-
-function getverticescoords(mesh::PolytopalMesh2, entity::MeshEntity)
-  return [mesh.vertices[i] for i in getverticesidx(mesh, entity)]
-end
-
-function getvertexcoords(mesh::PolytopalMesh2, entity::MeshEntity, vidx::Int)
-  return mesh.vertices[getverticesidx(mesh, entity)[vidx]]
-end
-
-#Internal
 @inline get_entity_indices(connectivity, idx) = connectivity.indices[connectivity.offsets[idx]:connectivity.offsets[idx+1]-1]
 function getverticesidx(mesh::PolytopalMesh2{dim}, entity::MeshEntity{d}) where {dim,d}
   connectivity = get_connectivity!(mesh,d,0)
@@ -88,6 +114,10 @@ function _pack_connectivity(indices_mat)
     push!(indices,x...)
   end
   MeshConectivity(Tuple(indices), Tuple(offsets))
+end
+
+function _unpack_connectivity(connectivity::MeshConectivity)
+  return [get_entity_indices(connectivity,i) for i in 1:(size(connectivity.offsets,1)-1)]
 end
 
 # Compute d1 -> d2 from d2 -> d1
@@ -119,7 +149,50 @@ function _intersection(mesh,d1,d2,d3)
   _pack_connectivity(indices)
 end
 
+function _local_edgesD(mesh,cell)
+  indices = getverticesidx(mesh,cell)
+  N = size(indices,1)
+  idx = Tuple((i,mod1(i+1,N)) for i in 1:N)
+  return [[indices[x[1]],indices[x[2]]] for x in idx]
+end
+
+#Compute D -> d and d -> 0 from D -> 0 and D -> D for 0 < d < D
+function _build!(mesh::PolytopalMesh2{D},d) where {D}
+  indices1 = [Int[] for _ in 1:getnentities(mesh,D)]
+  indices2 = [Int[] for _ in 1:getnentities(mesh,d)]
+  if d == 1
+    edgesDict = Dict{Set{Int},Int}()
+    nextidx = 1 #first edge index
+    for cell in getentities(mesh,D)
+      Vi = _local_edgesD(mesh, cell)
+      for vi in Vi
+        token = Base.ht_keyindex2!(edgesDict, Set(vi))
+        if token > 0 # reuse edge index
+          reuse_idx = edgesDict.vals[token]
+          push!(indices1[cell.index], reuse_idx)    #sign is used for orientation
+        else
+          push!(indices1[cell.index], nextidx)
+          indices2[nextidx] = vi
+          Base._setindex!(edgesDict, nextidx, Set(vi), -token)
+          nextidx += 1
+        end
+      end
+    end
+  else
+    error("Automatic construction of entities of dim $d failed")
+  end
+  V = _pack_connectivity(indices1)
+  push!(mesh.geometry,(D,d)=>V)
+  V = _pack_connectivity(indices2)
+  push!(mesh.geometry,(d,0)=>V)
+end
+
 function get_connectivity!(mesh::PolytopalMesh2{D},d1::Int,d2::Int) where {D}
+  if (0 < d1 < D) && !haskey(mesh.geometry,(d1,0))
+      _build!(mesh,d1)
+  elseif (d1 != d2) && (0 < d2 < D) && !haskey(mesh.geometry,(d2,0))
+      _build!(mesh,d2)
+  end
   if haskey(mesh.geometry,(d1,d2))
     get(mesh.geometry,(d1,d2),nothing)
   else
@@ -136,79 +209,3 @@ function get_connectivity!(mesh::PolytopalMesh2{D},d1::Int,d2::Int) where {D}
     return V
   end
 end
-
-function local_vertices(mesh, cell::MeshEntity, d)
-  if haskey(mesh.geometry,(d,0))
-    V = getverticesidx(mesh, cell)
-  elseif d==1
-
-  else
-  end
-end
-
-function build_d(mesh, d)
-  k = 0
-  for cell in getcells(mesh)
-    local_vertices(mesh,cell,d)
-  end
-end
-
-################ Auxiliary functions
-function get_Normal(mesh::PolytopalMesh2{dim,T}, edge_idx::EdgeIndex) where {dim,T}
-    coords = getverticescoords(mesh, edge_idx)
-    v1 =  coords[2] - coords[1]
-    n1 = Tensors.Vec{2}((v1[2], -v1[1]))
-    return n1/norm(n1)
-end
-
-function get_vertices_matrix(mesh::PolytopalMesh{dim,T,C}) where {dim,T,C}
-    vertices_m = Matrix{T}(undef,length(mesh.vertices),dim)
-    for (k,vertex) in enumerate(mesh.vertices)
-        vertices_m[k,:] = vertex.x
-    end
-    vertices_m
-end
-function get_conectivity_list(mesh::PolytopalMesh{dim,T,C}) where {dim,T,C}
-    cells_m = Vector()
-    for k = 1:getncells(mesh)
-        push!(cells_m,mesh.cells[k].vertices)
-    end
-    cells_m
-end
-
-function cell_volume(mesh::PolytopalMesh{2}, cell_idx::Int)
-    N = getnvertices(mesh.cells[cell_idx])
-    verts = getverticescoords(mesh,cell_idx)
-    return 0.5*abs(sum(verts[j][1]*verts[mod1(j+1,N)][2]-verts[mod1(j+1,N)][1]*verts[j][2] for j ∈ 1:N))
-end
-
-function cell_centroid(mesh::PolytopalMesh{2}, cell_idx::Int)
-    verts = getverticescoords(mesh,cell_idx)
-    vertices = [StaticArrays.SVector(x[1],x[2]) for x in verts]
-    chull = PlanarConvexHulls.ConvexHull{PlanarConvexHulls.CCW}(vertices)
-    return Tensors.Vec{2}(PlanarConvexHulls.centroid(chull))
-end
-
-function cell_diameter(mesh::PolytopalMesh{dim,T}, cell_idx::Int) where {dim,T}
-    verts = getverticescoords(mesh,cell_idx)
-    vertices = [StaticArrays.SVector(x[1],x[2]) for x in verts]
-    chull = PlanarConvexHulls.ConvexHull{PlanarConvexHulls.CCW}(vertices)
-    h = 0.0
-    for vert in chull.vertices
-        h = max(h,maximum([norm(vert-vert2) for vert2 in chull.vertices]))
-    end
-    h
-end
-
-
-
-geometry = Dict((2,0) => MeshConectivity((1,2,4,2,3,4),(1,4,7)))
-mesh1 = PolytopalMesh2((4,5,2),[(0.0,0.0),(1.,0.),(0.,1.),(1.,1.)],geometry,Dict{Int,Dict{String,Set{Int}}}())
-
-import Tensors
-using jFEMTools
-mesh2 = rectangle_mesh(TriangleCell, (1,1), Tensors.Vec{2}((0.0,0.0)), Tensors.Vec{2}((1.0,1.0)))
-
-using BenchmarkTools
-@btime PolytopalMesh2((4,5,2),[(0.0,0.0),(1.,0.),(0.,1.),(1.,1.)],geometry,Dict{Int,Dict{String,Set{Int}}}())
-@btime rectangle_mesh(TriangleCell, (1,1), Tensors.Vec{2}((0.0,0.0)), Tensors.Vec{2}((1.0,1.0)))

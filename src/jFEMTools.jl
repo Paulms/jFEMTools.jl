@@ -18,8 +18,9 @@ export  rectangle_mesh, RectangleCell, TriangleCell, HexagonCell,
         getncells, getverticesidx, getverticescoords,
         getnedges, cell_volume, cell_centroid, cell_diameter,
         mapToGlobalIdx, getvertexset, getvertexcoords,
-        getnvertices, get_vertices_matrix, get_conectivity_list,
-	PolytopalMesh, unitSquareMesh
+        getnvertices, get_vertices_matrix, get_cell_connectivity_list,
+  PolytopalMesh, unitSquareMesh
+export FaceIndex, EdgeIndex, FacetIndex
 # Assembler
 export  start_assemble, assemble!,
         end_assemble
@@ -39,7 +40,9 @@ include("quadrature.jl")
 include("tools.jl")
 include("StrangQuad.jl")
 include("Interpolations.jl")
+include("mesh_operations.jl")
 include("mesh.jl")
+include("mesh2.jl")
 include("mesh_generator.jl")
 include("functions.jl")
 include("assembler.jl")

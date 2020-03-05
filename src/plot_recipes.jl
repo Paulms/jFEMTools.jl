@@ -12,7 +12,7 @@ function default_theme(scene::SceneLike, ::Type{<: Plot(PolytopalMesh)})
  function AbstractPlotting.plot!(p::Plot(PolytopalMesh))
      mesh = to_value(p[1])
      coordinates = get_vertices_matrix(mesh);
-     connectivity = get_conectivity_list(mesh);
+     connectivity = get_cell_connectivity_list(mesh);
      u = to_value(p[:color])
      for row in 1:getncells(mesh)
      	#read coordinates
