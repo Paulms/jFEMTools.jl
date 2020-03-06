@@ -1,4 +1,4 @@
-@testset "Test 2d mesh generators" begin
+#@testset "Test 2d mesh generators" begin
 using jFEMTools
 import Tensors
 jF = jFEMTools
@@ -41,4 +41,4 @@ cells = [
     ];
 mixmesh = PolytopalMesh(cells, mesh.vertices)
 
-end
+#end

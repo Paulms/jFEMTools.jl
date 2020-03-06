@@ -124,29 +124,3 @@ function get_cell_connectivity_list(mesh::PolytopalMesh{dim,T,C}) where {dim,T,C
     end
     cells_m
 end
-
-###########
-
-function cell_volume(mesh::PolytopalMesh{2}, cell_idx::Int)
-    N = getnvertices(mesh.cells[cell_idx])
-    verts = getverticescoords(mesh,cell_idx)
-    return 0.5*abs(sum(verts[j][1]*verts[mod1(j+1,N)][2]-verts[mod1(j+1,N)][1]*verts[j][2] for j ∈ 1:N))
-end
-
-function cell_centroid(mesh::PolytopalMesh{2}, cell_idx::Int)
-    verts = getverticescoords(mesh,cell_idx)
-    vertices = [StaticArrays.SVector(x[1],x[2]) for x in verts]
-    chull = PlanarConvexHulls.ConvexHull{PlanarConvexHulls.CCW}(vertices)
-    return Tensors.Vec{2}(PlanarConvexHulls.centroid(chull))
-end
-
-function cell_diameter(mesh::PolytopalMesh{dim,T}, cell_idx::Int) where {dim,T}
-    verts = getverticescoords(mesh,cell_idx)
-    vertices = [StaticArrays.SVector(x[1],x[2]) for x in verts]
-    chull = PlanarConvexHulls.ConvexHull{PlanarConvexHulls.CCW}(vertices)
-    h = 0.0
-    for vert in chull.vertices
-        h = max(h,maximum([norm(vert-vert2) for vert2 in chull.vertices]))
-    end
-    h
-end
