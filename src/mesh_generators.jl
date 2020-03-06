@@ -1,43 +1,44 @@
+# Generate 2D vertices in a rectangular Lattice
 function _generate_2d_vertices!(vertices, nx, ny, LL, LR, UR, UL)
-      for i in 0:ny-1
-        ratio_bounds = i / (ny-1)
-
-        x0 = LL[1] * (1 - ratio_bounds) + ratio_bounds * UL[1]
-        x1 = LR[1] * (1 - ratio_bounds) + ratio_bounds * UR[1]
-
-        y0 = LL[2] * (1 - ratio_bounds) + ratio_bounds * UL[2]
-        y1 = LR[2] * (1 - ratio_bounds) + ratio_bounds * UR[2]
-
-        for j in 0:nx-1
-            ratio = j / (nx-1)
-            x = x0 * (1 - ratio) + ratio * x1
-            y = y0 * (1 - ratio) + ratio * y1
-            push!(vertices, Vertex(Tensors.Vec{2}((x, y))))
-        end
-    end
-end
-
-# Check edge orientation consistency
-function _check_vertex_data(vertices, n1,n2,n3)
-    a = vertices[n2].x-vertices[n1].x
-    b = vertices[n3].x-vertices[n1].x
-    if (a[1]*b[2]-a[2]*b[1]) < 0
-        #swap vertices 2 and 3
-        return (n1,n3,n2)
-    end
-    return (n1,n2,n3)
-end
+    for i in 0:ny-1
+      ratio_bounds = i / (ny-1)
+  
+      x0 = LL[1] * (1 - ratio_bounds) + ratio_bounds * UL[1]
+      x1 = LR[1] * (1 - ratio_bounds) + ratio_bounds * UR[1]
+  
+      y0 = LL[2] * (1 - ratio_bounds) + ratio_bounds * UL[2]
+      y1 = LR[2] * (1 - ratio_bounds) + ratio_bounds * UR[2]
+  
+      for j in 0:nx-1
+          ratio = j / (nx-1)
+          x = x0 * (1 - ratio) + ratio * x1
+          y = y0 * (1 - ratio) + ratio * y1
+          push!(vertices, Vertex(Tensors.Vec{2}((x, y))))
+      end
+  end
+  end
+  
+  # Check edge orientation consistency
+  function _check_vertex_data(vertices, n1,n2,n3)
+  a = vertices[n2].x-vertices[n1].x
+  b = vertices[n3].x-vertices[n1].x
+  if (a[1]*b[2]-a[2]*b[1]) < 0
+      #swap vertices 2 and 3
+      return (n1,n3,n2)
+  end
+  return (n1,n2,n3)
+  end
 
 @inline _mapToGlobalIdx(cells,cellidx,localvertexidx) = cells[cellidx].vertices[localvertexidx]
 
 function _get_vertexset_from_edges(cells,edgeset)
-    vertices = Set{Int}()
-    for edge in edgeset
-        CellType = typeof(cells[edge.cellidx])
-        push!(vertices, _mapToGlobalIdx(cells, edge.cellidx, reference_edge_vertices(CellType)[edge.idx][1]))
-        push!(vertices, _mapToGlobalIdx(cells, edge.cellidx, reference_edge_vertices(CellType)[edge.idx][2]))
-    end
-    return vertices
+  vertices = Set{Int}()
+  for edge in edgeset
+      CellType = typeof(cells[edge.cellidx])
+      push!(vertices, _mapToGlobalIdx(cells, edge.cellidx, reference_edge_vertices(CellType)[edge.idx][1]))
+      push!(vertices, _mapToGlobalIdx(cells, edge.cellidx, reference_edge_vertices(CellType)[edge.idx][2]))
+  end
+  return vertices
 end
 
 # Shortcuts

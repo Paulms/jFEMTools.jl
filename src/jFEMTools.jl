@@ -21,6 +21,7 @@ export  rectangle_mesh, RectangleCell, TriangleCell, HexagonCell,
         getnvertices, get_vertices_matrix, get_cell_connectivity_list,
   PolytopalMesh, unitSquareMesh
 export FaceIndex, EdgeIndex, FacetIndex
+export rectangle_mesh2
 # Assembler
 export  start_assemble, assemble!,
         end_assemble
@@ -43,7 +44,9 @@ include("Interpolations.jl")
 include("mesh_operations.jl")
 include("mesh.jl")
 include("mesh2.jl")
-include("mesh_generator.jl")
+include("mesh_generic_funcs.jl")
+include("mesh_generators.jl")
+include("mesh2_generators.jl")
 include("functions.jl")
 include("assembler.jl")
 #include("plot_recipes.jl")

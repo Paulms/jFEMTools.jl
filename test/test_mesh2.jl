@@ -4,7 +4,7 @@
     const jF = jFEMTools
     geometry = Dict((2,0) => jF.MeshConectivity((1,2,3,2,4,3),(1,4,7)))
     mesh2 = jF.PolytopalMesh2((4,5,2),[Tensors.Vec{2}((0.0,0.0)),Tensors.Vec{2}((1.,0.)),Tensors.Vec{2}((0.,1.)),Tensors.Vec{2}((1.,1.))],
-            geometry,Dict{Int,Dict{String,Set{Int}}}())
+            geometry,Dict{Int,Dict{String,Set{NTuple{2,Int}}}}())
 
     mesh = unitSquareMesh(TriangleCell, (1,1));
 

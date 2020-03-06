@@ -17,7 +17,7 @@ struct PolytopalMesh2{dim,T,dim1} #<: AbstractPolytopalMesh
   vertices::Vector{Tensors.Vec{dim, T}} #   NTuple{dim, T}}
   geometry::Dict{NTuple{2,Int},MeshConectivity}
   # Sets
-  entitysets::Dict{Int,Dict{String,Set{Int}}}
+  entitysets::Dict{Int,Dict{String,Set{NTuple{2,Int}}}}
 end
 
 #Generic Interface

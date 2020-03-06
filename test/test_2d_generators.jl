@@ -41,4 +41,8 @@ cells = [
     ];
 mixmesh = PolytopalMesh(cells, mesh.vertices)
 
+# Mesh2.0
+mesh = rectangle_mesh2(TriangleCell, (2,2), Tensors.Vec{2}((0.0,0.0)), Tensors.Vec{2}((1.0,1.0)))
+
+
 #end
