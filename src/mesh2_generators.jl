@@ -208,9 +208,9 @@ function rectangle_mesh2(::Type{HexagonCell}, nel::NTuple{2,Int}, LL::Tensors.Ve
   nel_tot = size(centroids,1)
   n_vertices = size(vertices,1)
   geometry = Dict((2,0) => MeshConectivity(Tuple(indices), Tuple(offsets)))
-  entities = (n_vertices, nel_x+nel_y+2*nel_x*nel_y, nel_tot)
 
   # Cell edges
+  n_edges = 0
   edgesets = Dict{String,Set{NTuple{2,Int}}}()
   t_edge = mod1(nel_y,3)==1 ? 4 : 3
   t_idxs = (nel_tot-nel_x + (mod1(nel_y,3)==3 ? 0 : 1)):nel_tot
@@ -225,10 +225,12 @@ function rectangle_mesh2(::Type{HexagonCell}, nel::NTuple{2,Int}, LL::Tensors.Ve
           push!(l_bounds,(c_idx+nel_x+1,ed_idx))
           push!(r_bounds,(c_idx+2*nel_x,3))
           c_idx = c_idx + nel_x*2+1
+          n_edges = n_edges + 3 + 6*nel_x
       elseif mod1(i,3) == 2
           push!(l_bounds,(c_idx,4))
           push!(r_bounds,(c_idx+nel_x,2))
           c_idx = c_idx + nel_x + 1
+          n_edges = n_edges + 1 + 6*nel_x
       else
           push!(l_bounds,(c_idx,6))
           push!(r_bounds,(c_idx+nel_x-1,3))
@@ -237,6 +239,7 @@ function rectangle_mesh2(::Type{HexagonCell}, nel::NTuple{2,Int}, LL::Tensors.Ve
               push!(r_bounds,(c_idx+2*nel_x,2))
           end
           c_idx = c_idx + nel_x
+          n_edges = n_edges + 3 + 5*nel_x
       end
   end
   edgesets["bottom"] = Set{Tuple{Int,Int}}([(c_i,1) for c_i in 1:(nel_x+1)])
@@ -244,6 +247,8 @@ function rectangle_mesh2(::Type{HexagonCell}, nel::NTuple{2,Int}, LL::Tensors.Ve
   edgesets["right"]  = Set{Tuple{Int,Int}}([(x[1],x[2]) for x in r_bounds])
   edgesets["left"]   = Set{Tuple{Int,Int}}([(x[1],x[2]) for x in l_bounds])
   edgesets["boundary"] = union(edgesets["bottom"],edgesets["right"],edgesets["top"],edgesets["left"])
+
+  entities = (n_vertices, n_edges, nel_tot)
 
   return PolytopalMesh2(entities,vertices,geometry,Dict(1=>edgesets))
 end
