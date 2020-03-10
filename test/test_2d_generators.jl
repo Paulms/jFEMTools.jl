@@ -1,4 +1,4 @@
-#@testset "Test 2d mesh generators" begin
+@testset "Test 2d mesh generators" begin
 using jFEMTools
 import Tensors
 jF = jFEMTools
@@ -43,6 +43,23 @@ mixmesh = PolytopalMesh(cells, mesh.vertices)
 
 # Mesh2.0
 mesh = rectangle_mesh2(TriangleCell, (2,2), Tensors.Vec{2}((0.0,0.0)), Tensors.Vec{2}((1.0,1.0)))
+@test getncells(mesh) == 8
+@test getnvertices(mesh) == 9
+@test cell_diameter(mesh,1) == sqrt(2)/2
+@test getnfacets(mesh,1) == 3
+for cell_idx in 1:getncells(mesh)
+    @test cell_volume(mesh, cell_idx) ≈ 1/8
+end
+mesh = rectangle_mesh2(RectangleCell, (2,2), Tensors.Vec{2}((0.0,0.0)), Tensors.Vec{2}((1.0,1.0)))
+@test getncells(mesh) == 4
+@test getnvertices(mesh) == 9
+@test cell_diameter(mesh,1) == sqrt(2)/2
+@test getnfacets(mesh,1) == 4
 
+mesh = rectangle_mesh2(HexagonCell, (2,2), Tensors.Vec{2}((0.0,0.0)), Tensors.Vec{2}((1.0,1.0)))
+@test getncells(mesh) == 10
+@test getnvertices(mesh) == 19
+@test cell_diameter(mesh,1) == sqrt(2)/4
+@test getnfacets(mesh,1) == 4
 
-#end
+end

@@ -39,13 +39,14 @@ function get_cell_connectivity_list(mesh::PolytopalMesh2{dim}) where {dim}
 end
 
 getncellvertices(mesh::PolytopalMesh2{dim}, cell_idx) where {dim} = getnvertices(mesh,MeshEntity{dim}(cell_idx))
+getnfacets(mesh::PolytopalMesh2{dim}, cell_idx) where {dim} = getcellnsubentities(mesh,cell_idx,dim-1)
 
 #Common API
 @inline getnentities(mesh::PolytopalMesh2,d) = mesh.entities[d+1]
 function getentities(mesh::PolytopalMesh2, d)
   return [MeshEntity{d}(idx) for idx in 1:getnentities(mesh,d)]
 end
-getentityset(mesh::PolytopalMesh2, entity::Int, set::String) = mesh.entitysets[entity+1][set]
+getentityset(mesh::PolytopalMesh2, entity::Int, set::String) = mesh.entitysets[entity][set]
 
 getncells(mesh::PolytopalMesh2{dim}) where {dim} = getnentities(mesh,dim)
 getnvertices(mesh::PolytopalMesh2) = getnentities(mesh,0)
@@ -60,6 +61,11 @@ getfacets(mesh::PolytopalMesh2{dim}) where {dim} = getentities(mesh,dim-1)
 function getcellsubentities(mesh::PolytopalMesh2{dim},cellidx,entity::Int) where {dim}
   connectivity = get_connectivity!(mesh,dim,entity)
   return [MeshEntity{entity}(idx) for idx in get_entity_indices(connectivity,cellidx)]
+end
+
+function getcellnsubentities(mesh::PolytopalMesh2{dim},cellidx,entity::Int) where {dim}
+  connectivity = get_connectivity!(mesh,dim,entity)
+  return connectivity.offsets[cellidx+1] - connectivity.offsets[cellidx]
 end
 
 getvertexcoords(mesh::PolytopalMesh2, vertex_idx::Int) = mesh.vertices[vertex_idx]

@@ -19,7 +19,7 @@ export  rectangle_mesh, RectangleCell, TriangleCell, HexagonCell,
         getnedges, cell_volume, cell_centroid, cell_diameter,
         mapToGlobalIdx, getvertexset, getvertexcoords,
         getnvertices, get_vertices_matrix, get_cell_connectivity_list,
-  PolytopalMesh, unitSquareMesh
+  PolytopalMesh, unitSquareMesh, getnfacets
 export FaceIndex, EdgeIndex, FacetIndex
 export rectangle_mesh2
 # Assembler

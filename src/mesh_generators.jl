@@ -145,22 +145,6 @@ end
 # Hexagonal Cells 2D
 #############################
 
-function _generate_2d_hex_centroids(T,LL, n_centroid_rows, n_centroid_cols, hex_width, hex_heigth)
-    centroids = Tensors.Vec{2,T}[]
-    x_coord = LL[1]; y_coord = LL[2]; sign = 1;
-    for j in 0:(n_centroid_rows-1)
-        for i in 0:(sign > 0 ? n_centroid_cols : n_centroid_cols-1)
-            centroid = Tensors.Vec{2,T}((x_coord,y_coord))
-            push!(centroids, centroid)
-            x_coord = x_coord + hex_width
-        end
-        y_coord = y_coord + hex_heigth*3/4
-        x_coord = LL[1] + max(0,sign*hex_width/2)
-        sign =  -sign;
-    end
-    return centroids
-end
-
 function _gen_hexagon(centroid,LL,UR,hex_width,hex_heigth)
     hex_verts = [
         Vertex(Tensors.Vec{2}((centroid[1]-hex_width/2,centroid[2]-hex_heigth/4))),
@@ -186,13 +170,15 @@ function _gen_hexagon(centroid,LL,UR,hex_width,hex_heigth)
         else
             throw("error on hexagon at corner $centroid")
         end
-    elseif size(filter_verts,1) == 3 #top and bottom pentagon case
+    elseif size(filter_verts,1) == 3 #top and bottom pentagon/triangle case
         nv1 = Vertex(Tensors.Vec{2}((centroid[1]-hex_width/2, centroid[2])))
         nv2 = Vertex(Tensors.Vec{2}((centroid[1]+hex_width/2, centroid[2])))
         if centroid[2] == LL[2]
             filter_verts = (nv1,nv2,filter_verts...)
         elseif centroid[2] == UR[2]
             filter_verts = (nv1,filter_verts...,nv2)
+        elseif centroid[2] > UR[2]
+            filter_verts = (filter_verts...,)
         else
             throw("error at bottom centroid $centroid")
         end
@@ -200,25 +186,10 @@ function _gen_hexagon(centroid,LL,UR,hex_width,hex_heigth)
     return filter_verts
 end
 
-# Use map_func to avoid float precision differences between the same vertex
-function _push_cell_vertex!(vert,cell_verts, used_vertices,vertices,nextvert, map_func)
-        token = ht_keyindex2!(used_vertices, vert)
-        if token > 0 # reuse dofs
-            reuse_vert = used_vertices.vals[token]
-            push!(cell_verts, reuse_vert)
-        else # token <= 0, use new vertex
-            Base._setindex!(used_vertices, nextvert, vert, -token)
-            push!(cell_verts, nextvert)
-            push!(vertices, map_func(vert))
-            nextvert += 1
-        end
-        return nextvert
-end
-
 function rectangle_mesh(::Type{HexagonCell}, nel::NTuple{2,Int}, LL::Tensors.Vec{2,T}, UR::Tensors.Vec{2,T}) where {T}
     LR = Tensors.Vec{2}((UR[1],LL[2]))
     UL = Tensors.Vec{2}((LL[1],UR[2]))
-    nel_x = nel[1]; nel_y = isodd(nel[2]) ? nel[2] : nel[2]+1
+    nel_x = nel[1]; nel_y = nel[2]
     nel_tot = 2*nel_x*nel_y +nel_y - nel_x
 
     # Generate vertices
@@ -232,38 +203,55 @@ function rectangle_mesh(::Type{HexagonCell}, nel::NTuple{2,Int}, LL::Tensors.Vec
 
     map_func(x::Vertex) = Vertex(Tensors.Vec{2}((x.x[1]*w_scale+LL[1],x.x[2]*h_scale+LL[2])))
 
-    n_centroid_cols = nel_x; n_centroid_rows = nel_y+2
-    centroids = _generate_2d_hex_centroids(T,LL, n_centroid_rows, n_centroid_cols, hex_width, hex_heigth)
+    centroids = Tensors.Vec{2,T}[]
+    _generate_2d_hex_centroids!(centroids,LL, nel_y, nel_x, hex_width, hex_heigth)
     cells = Cell[]
     used_vertices = Dict{Vertex,Int}()
     #Add cells
     nextvert = 1 # next free vertex to use
-    c_i = 1
-    sign = 1
-    for j in 0:(n_centroid_rows-1)
-        for i in 0:(sign > 0 ? n_centroid_cols : n_centroid_cols-1)
-            cell_verts = Int[]
-            for vert in _gen_hexagon(centroids[c_i],LLn,URn,hex_width,hex_heigth)
-                nextvert = _push_cell_vertex!(vert,cell_verts, used_vertices,vertices,nextvert, map_func)
-            end
-            n = size(cell_verts,1)
-            push!(cells,Cell{2,n,n,1}(Tuple(cell_verts)))
-            c_i +=1
+    for c_i in 1:size(centroids,1)
+        cell_verts = Int[]
+        for vert in _gen_hexagon(centroids[c_i],LLn,URn,hex_width,hex_heigth)
+            nextvert = _push_cell_vertex!(vert,cell_verts, used_vertices,vertices,nextvert, map_func)
         end
-        sign =  -sign;
+        n = size(cell_verts,1)
+        push!(cells,Cell{2,n,n,1}(Tuple(cell_verts)))
     end
 
     # Cell edges
     edgesets = Dict{String,Set{EdgeIndex}}()
-    ncells = size(cells,1)
-    l_idxs = zip(repeat([6,4],div(nel_y,2)+1),cumsum(repeat([nel_x+1,nel_x],2)).+1)
-    ft_idx = sum(repeat([nel_x+1,nel_x],2)).+1
-    t_idxs = zip([3,repeat([4],nel_x-1)...,3],ft_idx:ft_idx+nel_x)
-    r_idxs = zip(repeat([3,2],div(nel_y,2)+1),cumsum(repeat([nel_x,nel_x+1],2)).+(nel_x+1))
+    ncells = size(cells,1) 
+    t_edge = mod1(nel_y,3)==1 ? 4 : 3
+    t_idxs = (ncells-nel_x + (mod1(nel_y,3)==3 ? 0 : 1)):ncells
+    l_bounds = Tuple{Int,Int}[]
+    r_bounds = Tuple{Int,Int}[]
+    c_idx = 1
+    for i in 1:nel_y
+        if mod1(i,3) == 1
+            push!(l_bounds,(c_idx,4))
+            push!(r_bounds,(c_idx+nel_x,2))
+            ed_idx = (i == nel_y ? 5 : 6)
+            push!(l_bounds,(c_idx+nel_x+1,ed_idx))
+            push!(r_bounds,(c_idx+2*nel_x,3))
+            c_idx = c_idx + nel_x*2+1
+        elseif mod1(i,3) == 2
+            push!(l_bounds,(c_idx,4))
+            push!(r_bounds,(c_idx+nel_x,2))
+            c_idx = c_idx + nel_x + 1
+        else
+            push!(l_bounds,(c_idx,6))
+            push!(r_bounds,(c_idx+nel_x-1,3))
+            if i == nel_y
+                push!(l_bounds,(c_idx+nel_x,4))
+                push!(r_bounds,(c_idx+2*nel_x,2))
+            end
+            c_idx = c_idx + nel_x
+        end
+    end
     edgesets["bottom"] = Set{EdgeIndex}([EdgeIndex(c_i,1) for c_i in 1:(nel_x+1)])
-    edgesets["right"]  = Set{EdgeIndex}([EdgeIndex(1+nel_x,2),[EdgeIndex(j,i) for (i,j) in r_idxs]...])
-    edgesets["top"]    = Set{EdgeIndex}([EdgeIndex(j,i) for (i,j) in t_idxs])
-    edgesets["left"]   = Set{EdgeIndex}([EdgeIndex(1,4),[EdgeIndex(j,i) for (i,j) in l_idxs]...])
+    edgesets["top"]    = Set{EdgeIndex}([EdgeIndex(i,t_edge) for i in t_idxs])
+    edgesets["right"]  = Set{EdgeIndex}([EdgeIndex(x[1],x[2]) for x in r_bounds])
+    edgesets["left"]   = Set{EdgeIndex}([EdgeIndex(x[1],x[2]) for x in l_bounds])
     edgesets["boundary"] = union(edgesets["bottom"],edgesets["right"],edgesets["top"],edgesets["left"])
 
     vertexsets = Dict{String,Set{Int}}()
