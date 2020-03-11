@@ -37,6 +37,6 @@ plot!(scene, mesh, color = x[vi])
 
 #Plot exact solution
 vv = get_vertices_matrix(mesh)
-xx = [g(vv.x) for vv in mesh.vertices];
+xx = [g(vv) for vv in mesh.vertices];
 plot!(scene, mesh, color = xx)
 #display(scene)
