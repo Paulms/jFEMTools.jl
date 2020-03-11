@@ -1,7 +1,7 @@
 using jFEMTools
 import Tensors
 
-mesh = unitSquareMesh(RectangleCell, (3,3));
+mesh = unitSquareMesh2(RectangleCell, (3,3));
 
 # forcing function
 rhs(x::Tensors.Vec{2}) = 2*π^2*sin(π*x[1])*sin(π*x[2])
@@ -27,7 +27,7 @@ x = K\b
 #Plot solution
 using Makie
 import AbstractPlotting
-include("../src/plot_recipes.jl")
+include("src/plot_recipes.jl")
 #popdisplay(AbstractPlotting.PlotDisplay())
 #AbstractPlotting.inline!(true)
 scene = Scene(resolution = (400, 200))

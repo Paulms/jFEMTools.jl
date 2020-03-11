@@ -12,6 +12,7 @@ import StaticArrays
 
 # Abstract types
 abstract type AbstractElement end
+abstract type AbstractPolytopalMesh{dim,T} end
 
 # Mesh related functions
 export  rectangle_mesh, RectangleCell, TriangleCell, HexagonCell,
@@ -21,7 +22,7 @@ export  rectangle_mesh, RectangleCell, TriangleCell, HexagonCell,
         getnvertices, get_vertices_matrix, get_cell_connectivity_list,
   PolytopalMesh, unitSquareMesh, getnfacets
 export FaceIndex, EdgeIndex, FacetIndex
-export rectangle_mesh2
+export PolytopalMesh2, rectangle_mesh2, unitSquareMesh2
 # Assembler
 export  start_assemble, assemble!,
         end_assemble

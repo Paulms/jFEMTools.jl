@@ -12,7 +12,7 @@ struct MeshConectivity
 end
 
 #dim1 = dim+1 (better solutions?)
-struct PolytopalMesh2{dim,T,dim1} #<: AbstractPolytopalMesh
+struct PolytopalMesh2{dim,T,dim1} <: AbstractPolytopalMesh{dim,T}
   entities::NTuple{dim1, Int}
   vertices::Vector{Tensors.Vec{dim, T}} #   NTuple{dim, T}}
   geometry::Dict{NTuple{2,Int},MeshConectivity}
@@ -38,8 +38,27 @@ function get_cell_connectivity_list(mesh::PolytopalMesh2{dim}) where {dim}
   _unpack_connectivity(get_connectivity!(mesh,dim,0))
 end
 
-getncellvertices(mesh::PolytopalMesh2{dim}, cell_idx) where {dim} = getnvertices(mesh,MeshEntity{dim}(cell_idx))
-getnfacets(mesh::PolytopalMesh2{dim}, cell_idx) where {dim} = getcellnsubentities(mesh,cell_idx,dim-1)
+getnvertices(mesh::PolytopalMesh2{dim}, entity::MeshEntity{dim}) where {dim} = getnsubentities(mesh,entity,0)
+getncellvertices(mesh::PolytopalMesh2{dim}, cell_idx::Int) where {dim} = getnvertices(mesh,MeshEntity{dim}(cell_idx))
+getnfacets(mesh::PolytopalMesh2{dim}, cell_idx) where {dim} = getncellsubentities(mesh,cell_idx,dim-1)
+
+function gettopology(mesh::PolytopalMesh2{dim}, cell::MeshEntity{dim}) where {dim}
+  topology = Dict{Int,Int}()
+  for i in 0:(dim-1)
+    push!(topology, i => getncellsubentities(mesh,cell.index,i))
+  end
+  topology[dim] = 1
+  return topology
+end
+
+getnedges(mesh::PolytopalMesh2{dim}, cell::MeshEntity{dim}) where {dim} = getncellsubentities(mesh,cell.index,1)
+
+function reference_edge_vertices(mesh::PolytopalMesh2{dim}, cell::MeshEntity{dim}) where {dim}
+  N = getnvertices(mesh,cell)
+  return Tuple((i,mod1(i+1,N)) for i in 1:N)
+end
+
+getverticesindices(mesh::PolytopalMesh2{dim}, cell::MeshEntity{dim}) where {dim} = getsubentitiesindexes(mesh,cell,0)
 
 #Common API
 @inline getnentities(mesh::PolytopalMesh2,d) = mesh.entities[d+1]
@@ -63,9 +82,19 @@ function getcellsubentities(mesh::PolytopalMesh2{dim},cellidx,entity::Int) where
   return [MeshEntity{entity}(idx) for idx in get_entity_indices(connectivity,cellidx)]
 end
 
-function getcellnsubentities(mesh::PolytopalMesh2{dim},cellidx,entity::Int) where {dim}
+function getsubentitiesindexes(mesh::PolytopalMesh2,entity::MeshEntity{d1},d2::Int) where {d1}
+  connectivity = get_connectivity!(mesh,d1,d2)
+  return get_entity_indices(connectivity,entity.index)
+end
+
+function getncellsubentities(mesh::PolytopalMesh2{dim},cellidx,entity::Int) where {dim}
   connectivity = get_connectivity!(mesh,dim,entity)
   return connectivity.offsets[cellidx+1] - connectivity.offsets[cellidx]
+end
+
+function getnsubentities(mesh::PolytopalMesh2,entity::MeshEntity{d1},d2::Int) where {d1}
+  connectivity = get_connectivity!(mesh,d1,d2)
+  return connectivity.offsets[entity.index+1] - connectivity.offsets[entity.index]
 end
 
 getvertexcoords(mesh::PolytopalMesh2, vertex_idx::Int) = mesh.vertices[vertex_idx]
@@ -77,11 +106,15 @@ end
 function getvertexcoords(mesh::PolytopalMesh2, entity::MeshEntity, vidx::Int)
   return mesh.vertices[getverticesidx(mesh, entity)[vidx]]
 end
-function getnvertices(mesh,entity::MeshEntity{d}) where{d}
+function getnvertices(mesh::PolytopalMesh2,entity::MeshEntity{d}) where{d}
   connectivity = get_connectivity!(mesh,d,0)
   idx = entity.index
   return connectivity.offsets[idx+1] - connectivity.offsets[idx]
 end
+
+getnedges(mesh::PolytopalMesh2{dim},cell::MeshEntity{dim}) where {dim} = getncellsubentities(mesh,cell.index,1)
+
+entityeltype(mesh::PolytopalMesh2, dim) = MeshEntity{dim}
 
 #Internal
 function get_entity_name(entity,dim)

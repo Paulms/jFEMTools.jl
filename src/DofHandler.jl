@@ -7,10 +7,10 @@ struct DofHandler{dim,T}
     variables::Vector{TrialFunction}
     cell_dofs::Vector{Int}
     cell_dofs_offset::Vector{Int}
-    mesh::PolytopalMesh{dim,T}
+    mesh::AbstractPolytopalMesh{dim,T}
 end
 
-function DofHandler(mesh::PolytopalMesh{dim,T}, u::TrialFunction) where {dim,T}
+function DofHandler(mesh::AbstractPolytopalMesh{dim,T}, u::TrialFunction) where {dim,T}
     dofhandler = DofHandler{dim,T}([u], Int[], Int[], mesh)
     _distribute_dofs(dofhandler)
 end
@@ -65,17 +65,17 @@ end
 
 # close the DofHandler and distribute all the dofs
 #TODO: This only work for D < 3
-function _distribute_dofs(dh::DofHandler{dim,T}) where {dim,T,shape}
+function _distribute_dofs(dh::DofHandler{dim,T}) where {dim,T}
     # `vertexdict` keeps track of the visited vertices. We store the global vertex
     # number and the first dof we added to that vertex.
-    vertexdicts = [Dict{Int,Int}() for _ in 1:nvariables(dh)]
+    vertexdicts = [Dict{entityeltype(dh.mesh,0),Int}() for _ in 1:nvariables(dh)]
 
     # `edgedict` keeps track of the visited edges, this will only be used for a 3D problem
     # We also need to store the direction
     # of the first edge we encounter and add dofs too. When we encounter the same edge
     # the next time we check if the direction is the same, otherwise we reuse the dofs
     # in the reverse order
-    edgedicts = [Dict{EdgeIndex,Int}() for _ in 1:nvariables(dh)]
+    edgedicts = [Dict{entityeltype(dh.mesh,1),Int}() for _ in 1:nvariables(dh)]
 
     # `facedict` keeps track of the visited faces. We only need to store the first dof we
     # added to the face; if we encounter the same face again we *always* reverse the order
@@ -91,18 +91,18 @@ function _distribute_dofs(dh::DofHandler{dim,T}) where {dim,T,shape}
     # loop over all the cells, and distribute dofs for all the fields
     for (ci, cell) in enumerate(getcells(dh.mesh))
         # Get topologies
-        n_max_topology_elements = maximum(keys(gettopology(cell)))
-        geometric_cell_topology = gettopology(cell)
+        n_max_topology_elements = maximum(keys(gettopology(dh.mesh,cell)))
+        geometric_cell_topology = gettopology(dh.mesh,cell)
         for fi in 1:nvariables(dh)
             element = dh.variables[fi].element
-            cell_topology = gettopology(cell, element)
+            cell_topology = gettopology(dh.mesh, cell, element)
             for n_element in 0:n_max_topology_elements-1
                 n_el_dofs_cell = cell_topology[n_element]
                 n_el_cell = geometric_cell_topology[n_element]
                 @assert mod(n_el_dofs_cell, n_el_cell) == 0
                 nelementdofs = Int(n_el_dofs_cell/n_el_cell)
                 if nelementdofs > 0
-                    for element in topology_elements(dh.mesh,ci,n_element)
+                    for element in getcellsubentities(dh.mesh,ci,n_element)
                         token = ht_keyindex2!(topologyDicts[n_element][fi], element)
                         if token > 0 # reuse dofs
                             reuse_dof = topologyDicts[n_element][fi].vals[token]
@@ -147,11 +147,11 @@ function vertexdofs(dh::DofHandler, u::TrialFunction)
     element = u.element
     dofs = zeros(Int,getnvertices(dh.mesh))
     for (ci, cell) in enumerate(getcells(dh.mesh))
-        nv = gettopology(cell, element)[0]*u.components
+        nv = gettopology(dh.mesh,cell, element)[0]*u.components
         for i in dh.cell_dofs_offset[ci]:(dh.cell_dofs_offset[ci]+nv-1)
             dof = dh.cell_dofs[i]
-            if !(dof ∈ dofs)
-                dofs[cell.vertices[i-dh.cell_dofs_offset[ci]+1]] = dof
+            if !(dof ∈ dofs)                
+                dofs[getverticesindices(dh.mesh,cell)[i-dh.cell_dofs_offset[ci]+1]] = dof
             end
         end
     end

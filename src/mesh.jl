@@ -1,4 +1,3 @@
-abstract type AbstractPolytopalMesh end
 abstract type AbstractCell{dim,V,F} end
 
 # Vertices
@@ -16,13 +15,13 @@ end
 #Common cell types
 const TriangleCell = Cell{2,3,3,1}
 @inline get_cell_name(::TriangleCell) = "Triangle"
-@inline reference_edge_vertices(::Type{TriangleCell}) = ((2,3),(3,1),(1,2))
+@inline reference_edge_vertices(::TriangleCell) = ((2,3),(3,1),(1,2))
 
 const RectangleCell = Cell{2,4,4,1}
 @inline get_cell_name(::RectangleCell) = "Rectangle"
-@inline reference_edge_vertices(::Type{RectangleCell}) = ((1,2),(2,3),(3,4),(4,1))
+@inline reference_edge_vertices(::RectangleCell) = ((1,2),(2,3),(3,4),(4,1))
 
-@inline reference_edge_vertices(::Type{Cell{2,N,N,1}})  where {N} = Tuple((i,mod1(i+1,N)) for i in 1:N)
+@inline reference_edge_vertices(::Cell{2,N,N,1})  where {N} = Tuple((i,mod1(i+1,N)) for i in 1:N)
 
 const HexagonCell = Cell{2,6,6,1}
 @inline get_cell_name(::HexagonCell) = "Hexagon"
@@ -36,7 +35,7 @@ gettopology(cell::Cell{2,N,M,P}) where {N,M,P} = Dict(0=>N,1=>M,2=>P)
 gettopology(cell::Cell{3,N,M,P}) where {N,M,P} = Dict(0=>N,1=>M,2=>P,3=>1)
 
 # ----------------- Mesh
-struct PolytopalMesh{dim,T,C} <: AbstractPolytopalMesh
+struct PolytopalMesh{dim,T,C} <: AbstractPolytopalMesh{dim,T}
     cells::Vector{C}
     vertices::Vector{Vertex{dim,T}}
     # Sets
@@ -58,7 +57,33 @@ end
 # Generic Interface
 getfacet(mesh::PolytopalMesh, facet) = facet
 getdim(mesh::PolytopalMesh{dim}) where {dim} = dim
-getncellvertices(mesh::PolytopalMesh, cell_idx) = getnvertices(mesh.cells[cell_idx])
+getncellvertices(mesh::PolytopalMesh, cell_idx::Int) = getnvertices(mesh.cells[cell_idx])
+gettopology(mesh::PolytopalMesh, cell::Cell) = gettopology(cell)
+getnvertices(mesh::PolytopalMesh, cell::Cell) = getnvertices(cell)
+getnegdes(mesh::PolytopalMesh, cell::Cell) = getnedges(cell)
+
+function getcellsubentities(mesh::PolytopalMesh{2},cellidx::Int,element::Int)
+  if element == 0
+      return mesh.cells[cellidx].vertices
+  elseif element == 1
+      return Tuple(EdgeIndex(cellidx,i) for i in 1:getnedges(mesh.cells[cellidx]))
+  else
+      throw("Topology element of order $element not available for cell type")
+  end
+end
+
+function entityeltype(mesh::PolytopalMesh{2},dim)
+    if dim == 0
+        return Int
+    elseif dim == 1
+        return EdgeIndex
+    else
+        error("mesh $mesh has not entity of dim $dim")
+    end
+end
+
+reference_edge_vertices(mesh::PolytopalMesh, cell::Cell) = reference_edge_vertices(cell)
+
 
 # API
 
@@ -68,15 +93,6 @@ getncellvertices(mesh::PolytopalMesh, cell_idx) = getnvertices(mesh.cells[cell_i
 @inline getvertexset(mesh::PolytopalMesh, set::String) = mesh.vertexsets[set]
 @inline getedgeset(mesh::PolytopalMesh, set::String) = mesh.edgesets[set]
 getcells(mesh::PolytopalMesh) = mesh.cells
-function topology_elements(mesh,cellidx,element::Int)
-    if element == 0
-        return mesh.cells[cellidx].vertices
-    elseif element == 1
-        return Tuple(EdgeIndex(cellidx,i) for i in 1:getnedges(mesh.cells[cellidx]))
-    else
-        throw("Topology element of order $element not available for cell type")
-    end
-end
 
 """
 function getcoords(mesh, vertex_idx::Int)
@@ -97,8 +113,8 @@ function getverticescoords(mesh::PolytopalMesh{dim,T}, cell_idx::Int) where {dim
     return coords
 end
 
-function getvertexcoords(mesh::PolytopalMesh{dim,T}, cell_idx::Int, vidx::Int) where {dim,T}
-    return mesh.vertices[mesh.cells[cell_idx].vertices[vidx]].x
+function getvertexcoords(mesh::PolytopalMesh{dim,T}, cell::Cell, vidx::Int) where {dim,T}
+    return mesh.vertices[cell.vertices[vidx]].x
 end
 
 function getverticescoords(mesh::PolytopalMesh{dim,T}, edge_idx::EdgeIndex) where {dim,T}
@@ -124,3 +140,5 @@ function get_cell_connectivity_list(mesh::PolytopalMesh{dim,T,C}) where {dim,T,C
     end
     cells_m
 end
+
+getverticesindices(mesh::PolytopalMesh,cell::Cell) = cell.vertices

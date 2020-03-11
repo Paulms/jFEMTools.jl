@@ -23,6 +23,16 @@ struct EdgeIndex
     idx::Int
 end
 
+function Base.getindex(e::EdgeIndex, n::Int64)
+  if n == 1
+    return e.cellidx
+  elseif n ==2
+    return e.idx
+  else
+    throw(BoundsError(e,n))
+  end
+end
+
 function get_Normal(mesh, edge_idx::EdgeIndex)
   coords = getverticescoords(mesh, edge_idx)
   v1 = coords[2] - coords[1]

@@ -10,20 +10,20 @@ function Dirichlet(dh::DofHandler{2}, u::TrialFunction, edgeset::String,f::Union
     prescribed_dofs = Vector{Int}()
     values = Vector{Float64}()
     for edge_idx in edgeset
-        cell_idx = edge_idx.cellidx
-        cell = dh.mesh.cells[cell_idx]
-        cell_topology = gettopology(cell, element)
-        edge_lidx = edge_idx.idx
+        cell_idx = edge_idx[1]  #cell idx
+        cell = getcells(dh.mesh)[cell_idx]
+        cell_topology = gettopology(dh.mesh,cell, element)
+        edge_lidx = edge_idx[2]  # edge idx
         l_dof = Int[]
         offset::Int = dh.cell_dofs_offset[cell_idx] - 1 + field_offset(dh, u, cell_idx)
         for j = 1:2 #Add vertex dofs
-            local_offset = reference_edge_vertices(typeof(cell))[edge_lidx][j]
+            local_offset = reference_edge_vertices(dh.mesh,cell)[edge_lidx][j]
             if !(dh.cell_dofs[offset+local_offset] ∈ prescribed_dofs)
                 push!(prescribed_dofs, dh.cell_dofs[offset+local_offset])
                 push!(l_dof, local_offset)
             end
         end
-        dofs_per_edge = Int(cell_topology[1]/getnedges(cell))
+        dofs_per_edge = Int(cell_topology[1]/getnedges(dh.mesh,cell))
         for j in 1:dofs_per_edge  #Add edge dofs
             local_offset::Int = cell_topology[0] + dofs_per_edge*(edge_lidx-1) + j
             if !(dh.cell_dofs[offset+local_offset] ∈ prescribed_dofs)

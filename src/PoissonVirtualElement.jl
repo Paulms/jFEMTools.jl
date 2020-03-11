@@ -30,7 +30,8 @@ end
 
 get_degree(el::LocalPoissonVirtualElement) = el.degree
 
-function gettopology(cell::Cell{2,V,E,M}, element::PoissonVirtualElement) where {V,E,M}
+function gettopology(mesh::AbstractPolytopalMesh{2},cell, element::PoissonVirtualElement)
+    V = getnvertices(mesh,cell)
     deg = get_degree(element)
     Dict(0=> V, 1=> V*(deg-1), 2=> Int((deg-1)*deg/2))
 end
@@ -41,13 +42,13 @@ function getnlocaldofs(element::PoissonVirtualElement{2}, cell::Cell{2,V,E,M}) w
 end
 
 function spatial_nodal_coordinate(mesh, ci::Int,element::PoissonVirtualElement{2},i::Int) where {V,E,M}
-    if i <= getnvertices(getcells(mesh)[ci]) #Vertices coordinates
-        return getvertexcoords(mesh,ci,i)
+    if i <= getnvertices(mesh,getcells(mesh)[ci]) #Vertices coordinates
+        return getvertexcoords(mesh,getcells(mesh)[ci],i)
     else     #Edge points coordinates
-        cell = mesh.cells[ci]
-        nv = getnvertices(cell)
-        cell_topology = gettopology(cell, element)
-        dofs_per_edge = Int(cell_topology[1]/getnedges(cell))
+        cell = getcells(mesh)[ci]
+        nv = getnvertices(mesh,cell)
+        cell_topology = gettopology(mesh,cell, element)
+        dofs_per_edge = Int(cell_topology[1]/getnedges(mesh,cell))
         ei = div((i - nv)-1,dofs_per_edge)+1
         val = 1/(dofs_per_edge+1)*mod1((i-nv),dofs_per_edge)
         map_unit_to_segment(Tensors.Vec{1}((val,)), getverticescoords(mesh,EdgeIndex(ci,ei)))

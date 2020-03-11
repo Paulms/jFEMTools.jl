@@ -1,3 +1,4 @@
+
 # Use map_func to avoid float precision differences between the same vertex
 function _push_cell_vertex!(vert,cell_verts, used_vertices,vertices,nextvert, map_func)
   token = ht_keyindex2!(used_vertices, vert)

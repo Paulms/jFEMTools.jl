@@ -34,9 +34,8 @@ function _generate_2d_vertices!(vertices, nx, ny, LL, LR, UR, UL)
 function _get_vertexset_from_edges(cells,edgeset)
   vertices = Set{Int}()
   for edge in edgeset
-      CellType = typeof(cells[edge.cellidx])
-      push!(vertices, _mapToGlobalIdx(cells, edge.cellidx, reference_edge_vertices(CellType)[edge.idx][1]))
-      push!(vertices, _mapToGlobalIdx(cells, edge.cellidx, reference_edge_vertices(CellType)[edge.idx][2]))
+      push!(vertices, _mapToGlobalIdx(cells, edge.cellidx, reference_edge_vertices(cells[edge.cellidx])[edge.idx][1]))
+      push!(vertices, _mapToGlobalIdx(cells, edge.cellidx, reference_edge_vertices(cells[edge.cellidx])[edge.idx][2]))
   end
   return vertices
 end
