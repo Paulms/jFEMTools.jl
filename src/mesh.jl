@@ -60,7 +60,7 @@ getdim(mesh::PolytopalMesh{dim}) where {dim} = dim
 getncellvertices(mesh::PolytopalMesh, cell_idx::Int) = getnvertices(mesh.cells[cell_idx])
 gettopology(mesh::PolytopalMesh, cell::Cell) = gettopology(cell)
 getnvertices(mesh::PolytopalMesh, cell::Cell) = getnvertices(cell)
-getnegdes(mesh::PolytopalMesh, cell::Cell) = getnedges(cell)
+getnedges(mesh::PolytopalMesh, cell::Cell) = getnedges(cell)
 
 function getcellsubentities(mesh::PolytopalMesh{2},cellidx::Int,element::Int)
   if element == 0
@@ -119,7 +119,7 @@ end
 
 function getverticescoords(mesh::PolytopalMesh{dim,T}, edge_idx::EdgeIndex) where {dim,T}
     cell = getcells(mesh)[edge_idx.cellidx]
-    ref_edge = reference_edge_vertices(typeof(cell))[edge_idx.idx]
+    ref_edge = reference_edge_vertices(mesh,cell)[edge_idx.idx]
     coords = Vector{Tensors.Vec{dim,T}}(undef, 2)
     for i in 1:2
         coords[i] = mesh.vertices[cell.vertices[ref_edge[i]]].x
@@ -129,7 +129,7 @@ end
 
 function getverticesindices(mesh::PolytopalMesh{dim,T}, edge_idx::EdgeIndex) where {dim,T}
     cell = getcells(mesh)[edge_idx.cellidx]
-    ref_edge = reference_edge_vertices(typeof(cell))[edge_idx.idx]
+    ref_edge = reference_edge_vertices(mesh,cell)[edge_idx.idx]
     return [cell.vertices[ref_edge[i]] for i in 1:2]
 end
 

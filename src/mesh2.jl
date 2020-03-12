@@ -112,8 +112,6 @@ function getnvertices(mesh::PolytopalMesh2,entity::MeshEntity{d}) where{d}
   return connectivity.offsets[idx+1] - connectivity.offsets[idx]
 end
 
-getnedges(mesh::PolytopalMesh2{dim},cell::MeshEntity{dim}) where {dim} = getncellsubentities(mesh,cell.index,1)
-
 entityeltype(mesh::PolytopalMesh2, dim) = MeshEntity{dim}
 
 #Internal
