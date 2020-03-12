@@ -12,10 +12,10 @@ using LinearAlgebra
 order = 2;
 dim = 2;
 
-mesh = unitSquareMesh(RectangleCell, (3,3));
+mesh = unitSquareMesh2(RectangleCell, (3,3));
 
 # Assamble local matrices
-cell = mesh.cells[1]
+cell = jF.getcells(mesh)[1]
 ci = 1
 
 vertices = getverticescoords(mesh, ci)
@@ -46,7 +46,7 @@ Mmass1ref_inv = inv(Mmass1ref)
 # Assemble M_{edge} matrix
 mdofs = jF.getnbasefunctions(Pkm_basis)
 Medges = Vector{Matrix{Float64}}()
-for e in 1:jF.getnedges(cell)
+for e in 1:jF.getnedges(mesh,cell)
   Medge = zeros(Float64,ϕdofs,mdofs)
   edge_coords = jF.getverticescoords(mesh, jF.EdgeIndex(ci,e))
   he = norm(edge_coords[2] - edge_coords[1]) 
@@ -61,7 +61,7 @@ end
 Mmass2m = zeros(Float64,mdofs,mdofs)
 for i in 1:mdofs, j = 1:mdofs
   αβ = Pkm_basis.indices[i] .+ Pkm_basis.indices[j]
-  for e in 1:jF.getnedges(cell)
+  for e in 1:jF.getnedges(mesh,cell)
     edge_coords = jF.getverticescoords(mesh, jF.EdgeIndex(ci,e))
     normal = normal = jF.get_Normal(mesh, jF.EdgeIndex(ci, e))
     for k = 1:size(points,1)
@@ -79,7 +79,7 @@ Mmass2 = view(Mmass2m,1:mkdofs,1:mkdofs)
 #Assemble M_{grad}
 Mgrad = zeros(Float64,mdofs-1,mdofs-1)
 for i in 2:mdofs, j = 2:mdofs
-  for e in 1:jF.getnedges(cell)
+  for e in 1:jF.getnedges(mesh,cell)
     edge_coords = jF.getverticescoords(mesh, jF.EdgeIndex(ci,e))
     normal = normal = jF.get_Normal(mesh, jF.EdgeIndex(ci, e))
     for k = 1:size(points,1)
@@ -107,7 +107,7 @@ gperpdofs = Int(order*(order+1)/2)
 M0 = zeros(Float64, mdofs-1,2*mdofs)
 
 for i in 2:mdofs, j = 1:mdofs
-  for e in 1:jF.getnedges(cell)
+  for e in 1:jF.getnedges(mesh,cell)
     edge_coords = jF.getverticescoords(mesh, jF.EdgeIndex(ci,e))
     normal = normal = jF.get_Normal(mesh, jF.EdgeIndex(ci, e))
     for k = 1:size(points,1)
