@@ -14,20 +14,20 @@ struct VEMOperators
     elements::Vector{LocalVEMOperators}
 end
 
-struct CellCache{dim}
-  cell::Cell{dim}
+struct CellCache{ct}
+  cell::ct
   ci::Int
   tess
   quad
   f
 end
 
-function VEMOperators(dof::DofHandler, u::TrialFunction{VirtualElement{dim}}; load = (x->0.0)) where {dim}
+function VEMOperators(dof::DofHandler, u::TrialFunction{PoissonVirtualElement{dim}}; load = (x->0.0)) where {dim}
     elements = get_local_elements(dof, u.element, load)
     VEMOperators(dof,elements)
 end
 
-function get_local_elements(dof::DofHandler{2}, element::VirtualElement{2}, load)
+function get_local_elements(dof::DofHandler{2}, element::PoissonVirtualElement{2}, load)
     local_elements = Vector{LocalVEMOperators}()
     for (ci, cell) in enumerate(getcells(dof.mesh))
         vertices = getverticescoords(dof.mesh, ci)
@@ -36,7 +36,7 @@ function get_local_elements(dof::DofHandler{2}, element::VirtualElement{2}, load
         cache = CellCache(cell, ci, tess, quad,load)
         centroid = cell_centroid(dof.mesh, ci)
         diameter = cell_diameter(dof.mesh, ci)
-        lelement = LocalVirtualElement(2,get_degree(element),centroid,diameter)
+        lelement = LocalPoissonVirtualElement(2,get_degree(element),centroid,diameter)
         D = _compute_local_D(lelement, dof, cache)
         G = _compute_local_G(lelement, dof, cache)
         B = _compute_local_B(lelement, dof, cache)
@@ -49,20 +49,20 @@ end
 
 # NOTE: From here the methods work only for 2D
 """ Compute local D matrix """
-function _compute_local_D(element::LocalVirtualElement, dof::DofHandler{2}, cache::CellCache{2})
+function _compute_local_D(element::LocalPoissonVirtualElement, dof::DofHandler{2}, cache::CellCache{CT}) where {CT}
     cell = cache.cell; ci = cache.ci
     degree = get_degree(element)
     ndofs = ndofs_per_cell(dof, ci)
     nk = Int((degree+1)*(degree+2)/2)
     D = zeros(ndofs,nk)
-    nv = getnvertices(cell)
+    nv = getnvertices(dof.mesh,cell)
     vertices = getverticescoords(dof.mesh, ci)
     # compute value in vertices
     for i in 1:nv, j in 1:nk
             D[i,j] = value(element.Pk_basis, j, vertices[i])
     end
     if degree >= 2
-        ne = getnedges(cell)
+        ne = getnedges(dof.mesh,cell)
         # Compute value for edges
         for i in (nv+1):(nv+ne), j in 1:nk
             D[i,j] = value(element.Pk_basis, j,
@@ -88,10 +88,10 @@ function _compute_local_D(element::LocalVirtualElement, dof::DofHandler{2}, cach
     return D
 end
 
-function p0m(element::LocalVirtualElement, dof::DofHandler{2},cache::CellCache{2}, i::Int)
+function p0m(element::LocalPoissonVirtualElement, dof::DofHandler{2},cache::CellCache{CT}, i::Int) where {CT}
   cell = cache.cell; ci = cache.ci
   degree = get_degree(element)
-  nv = getnvertices(cell)
+  nv = getnvertices(dof.mesh,cell)
   P0m = 0.0
    if degree == 1
      vertices = getverticescoords(dof.mesh, ci)
@@ -113,11 +113,11 @@ function p0m(element::LocalVirtualElement, dof::DofHandler{2},cache::CellCache{2
 end
 
 """ Compute local G matrix """
-function _compute_local_G(element::LocalVirtualElement, dof::DofHandler{2}, cache::CellCache{2})
+function _compute_local_G(element::LocalPoissonVirtualElement, dof::DofHandler{2}, cache::CellCache{CT}) where {CT}
   cell = cache.cell; ci = cache.ci
   degree = get_degree(element)
   nk = Int((degree+1)*(degree+2)/2)
-  ne = getnedges(cell)
+  ne = getnedges(dof.mesh,cell)
   G = zeros(nk, nk );
   # Gradient terms
   # First row
@@ -160,10 +160,10 @@ function _compute_local_G(element::LocalVirtualElement, dof::DofHandler{2}, cach
    return G
 end
 
-function compute_d_αβ(element::LocalVirtualElement, dof::DofHandler{2},cache::CellCache{2}, k::Int)
+function compute_d_αβ(element::LocalPoissonVirtualElement, dof::DofHandler{2},cache::CellCache{CT}, k::Int) where {CT}
   cell = cache.cell; ci = cache.ci
   degree = get_degree(element)
-  nv = getnvertices(cell)
+  nv = getnvertices(dof.mesh,cell)
   nkm2 = Int((degree-1)*degree/2)
   # Dimension of M_{k-2}: n_{k-2}
   d = zeros(nkm2,1);
@@ -191,13 +191,13 @@ function compute_d_αβ(element::LocalVirtualElement, dof::DofHandler{2},cache::
 end
 
 """ Compute the local B matrix """
-function _compute_local_B(element::LocalVirtualElement, dof::DofHandler{2}, cache::CellCache{2})
+function _compute_local_B(element::LocalPoissonVirtualElement, dof::DofHandler{2}, cache::CellCache{CT}) where {CT}
   cell = cache.cell; ci = cache.ci
   degree = get_degree(element)
   nk = Int((degree+1)*(degree+2)/2)
-  ne = getnedges(cell)
+  ne = getnedges(dof.mesh,cell)
   ndofs = ndofs_per_cell(dof, ci)
-  nv = getnvertices(cell)
+  nv = getnvertices(dof.mesh,cell)
   B = zeros(nk, ndofs);
 
    if (degree == 1)
@@ -245,9 +245,9 @@ function _compute_local_B(element::LocalVirtualElement, dof::DofHandler{2}, cach
                   map_unit_to_segment(element.edge_quad.points[g],v))
              edge_dof = -1
              if g == 1
-               edge_dof = reference_edge_vertices(typeof(cell))[k][1]
+               edge_dof = reference_edge_vertices(dof.mesh,cell)[k][1]
              elseif g == size(element.edge_quad.points,1)
-               edge_dof = reference_edge_vertices(typeof(cell))[k][2]
+               edge_dof = reference_edge_vertices(dof.mesh,cell)[k][2]
              else
                edge_dof = nv + (degree-1)*(k-1)+(g-1)
              end
@@ -264,13 +264,13 @@ function _compute_local_B(element::LocalVirtualElement, dof::DofHandler{2}, cach
 end
 
 """ Compute the local H matrix """
-function _compute_local_H(element::LocalVirtualElement, dof::DofHandler{2}, cache::CellCache{2})
+function _compute_local_H(element::LocalPoissonVirtualElement, dof::DofHandler{2}, cache::CellCache{CT}) where {CT}
   cell = cache.cell; ci = cache.ci
   degree = get_degree(element)
   nk = Int((degree+1)*(degree+2)/2)
-  ne = getnedges(cell)
+  ne = getnedges(dof.mesh,cell)
   ndofs = ndofs_per_cell(dof, ci)
-  nv = getnvertices(cell)
+  nv = getnvertices(dof.mesh,cell)
   H = zeros(nk, nk)
 
   for i in 1:nk, j in 1:nk
@@ -287,7 +287,7 @@ function _compute_local_H(element::LocalVirtualElement, dof::DofHandler{2}, cach
 end
 
 """ Compute the local load vector """
-function _compute_local_b(element::LocalVirtualElement, dof::DofHandler{2}, cache::CellCache{2})
+function _compute_local_b(element::LocalPoissonVirtualElement, dof::DofHandler{2}, cache::CellCache{CT}) where {CT}
   cell = cache.cell; ci = cache.ci; load_func = cache.f
   degree = get_degree(element)
   if degree == 1

@@ -1,14 +1,14 @@
 using jFEMTools
 import Tensors
 
-mesh = unitSquareMesh(RectangleCell, (3,3));
+mesh = unitSquareMesh2(RectangleCell, (3,3));
 
 # forcing function
 rhs(x::Tensors.Vec{2}) = 2*π^2*sin(π*x[1])*sin(π*x[2])
 
 degree = 2;
 dim = 2;
-element = VirtualElement(dim,degree);
+element = PoissonVirtualElement(dim,degree);
 u = TrialFunction(element)
 dofs = DofHandler(mesh, u);
 operators = VEMOperators(dofs, u;load = rhs);
@@ -27,7 +27,7 @@ x = K\b
 #Plot solution
 using Makie
 import AbstractPlotting
-include("../src/plot_recipes.jl")
+include("src/plot_recipes.jl")
 #popdisplay(AbstractPlotting.PlotDisplay())
 #AbstractPlotting.inline!(true)
 scene = Scene(resolution = (400, 200))
@@ -37,6 +37,6 @@ plot!(scene, mesh, color = x[vi])
 
 #Plot exact solution
 vv = get_vertices_matrix(mesh)
-xx = [g(vv.x) for vv in mesh.vertices];
+xx = [g(vv) for vv in mesh.vertices];
 plot!(scene, mesh, color = xx)
 #display(scene)

@@ -11,7 +11,7 @@
     # Test for order = 1
     degree = 1;
     dim = 2;
-    element = VirtualElement(dim,degree);
+    element = PoissonVirtualElement(dim,degree);
     u = TrialFunction(element)
     dofs = DofHandler(mesh, u);
     operators = VEMOperators(dofs, u;load = rhs);
@@ -38,7 +38,7 @@
     # Test order 2 implementation
     degree = 2
     dim = 2
-    element = VirtualElement(dim,degree)
+    element = PoissonVirtualElement(dim,degree)
     u = TrialFunction(element)
     dofs = DofHandler(mesh, u)
     operators = VEMOperators(dofs, u;load = rhs)
