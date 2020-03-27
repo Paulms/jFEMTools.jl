@@ -4,6 +4,7 @@ using SparseArrays
 using LinearAlgebra
 import Base:@propagate_inbounds
 import Tensors
+import Tensors: Vec,norm,dot,gradient,det, ⊗
 import Base.ht_keyindex2!
 import FastGaussQuadrature
 import VoronoiDelaunay
@@ -13,6 +14,13 @@ import StaticArrays
 # Abstract types
 abstract type AbstractElement end
 abstract type AbstractPolytopalMesh{dim,T} end
+
+function Base.show(io::IO, mesh::AbstractPolytopalMesh{dim}) where {dim}
+  println(io, "$dim D PolytopalMesh")
+  println(io, "type: ", typeof(mesh))
+  println(io, "Number of cells: ", getncells(mesh))
+  println(io, "Number of vertices: ", getnvertices(mesh))
+end
 
 # Mesh related functions
 export  rectangle_mesh, RectangleCell, TriangleCell, HexagonCell,
@@ -38,9 +46,15 @@ export VEMOperators
 export assemble_stiffnessMat, assemble_massMat, assemble_load
 export Dirichlet, apply!
 
-include("quadrature.jl")
+#FEM
+export ContinuousLagrange
+export FEFunctionSpace
+
+include("FEM/shapes.jl")
+include("Quads/quadrature.jl")
 include("tools.jl")
-include("StrangQuad.jl")
+include("Quads/StrangQuad.jl")
+include("Quads/GrundmannMoellerQuad.jl")
 include("Interpolations.jl")
 include("mesh_operations.jl")
 include("mesh.jl")
@@ -55,6 +69,11 @@ include("PoissonVirtualElement.jl")
 include("DofHandler.jl")
 include("VEMOperators.jl")
 include("boundary.jl")
+include("FEM/basis.jl")
+include("FEM/FiniteElement.jl")
+include("FEM/LagrangeFE.jl")
+include("FEM/FunctionSpaces.jl")
+include("FEM/iterator.jl")
 
 # SnoopCompile output
 include("precompile.jl")

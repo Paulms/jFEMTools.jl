@@ -61,6 +61,7 @@ getncellvertices(mesh::PolytopalMesh, cell_idx::Int) = getnvertices(mesh.cells[c
 gettopology(mesh::PolytopalMesh, cell::Cell) = gettopology(cell)
 getnvertices(mesh::PolytopalMesh, cell::Cell) = getnvertices(cell)
 getnedges(mesh::PolytopalMesh, cell::Cell) = getnedges(cell)
+getcell(mesh::PolytopalMesh, idx::Int) = mesh.cells[idx]
 
 function getcellsubentities(mesh::PolytopalMesh{2},cellidx::Int,element::Int)
   if element == 0
@@ -84,6 +85,14 @@ end
 
 reference_edge_vertices(mesh::PolytopalMesh, cell::Cell) = reference_edge_vertices(cell)
 
+function getverticescoords(mesh::PolytopalMesh{dim,T}, cell::Cell) where {dim,T}
+    N = getnvertices(cell)
+    coords = Vector{Tensors.Vec{dim,T}}(undef, N)
+    for (i,j) in enumerate(cell.vertices)
+        coords[i] = mesh.vertices[j].x
+    end
+    return coords
+end
 
 # API
 

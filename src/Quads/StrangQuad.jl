@@ -1,6 +1,4 @@
-struct Strang <: AbstractQuadratureRule end
-
-function (::Type{QuadratureRule{2,RefSimplex}})(quad_type::Strang, order::Int)
+function (::Type{QuadratureRule{Triangle}})(quad_type::Strang, order::Int)
     if order == 0 || order == 1
         points = [Tensors.Vec{2}([1.0/3.0, 1.0/3.0])]
         weigths = [0.5]
@@ -59,5 +57,5 @@ function (::Type{QuadratureRule{2,RefSimplex}})(quad_type::Strang, order::Int)
     else
         throw(ArgumentError("Strang rule of order $order not available"))
     end
-    return QuadratureRule{2,RefSimplex,Float64}(weigths, points)
+    return QuadratureRule{Triangle,2,Float64}(weigths, points)
 end
