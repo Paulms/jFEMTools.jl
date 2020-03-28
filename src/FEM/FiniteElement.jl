@@ -1,7 +1,7 @@
-abstract type FiniteElement{dim,shape,FuncOrder,GeomOrder} end
 getshape(::FiniteElement{dim,shape}) where {dim,shape} = shape
 
-function spatial_nodal_coordinate(fe::FiniteElement{dim}, n_point::Int, x::AbstractVector{Tensors.Vec{dim,T}}) where {dim,T}
+function spatial_nodal_coordinate(mesh::AbstractPolytopalMesh{dim,T}, ci::Int,fe::FiniteElement{dim},n_point::Int) where {dim,T}
+    x = getverticescoords(mesh,getcell(mesh,ci))
     n_base_funcs = getngeombasefunctions(fe)
     @assert length(x) == n_base_funcs
     vec = zero(Tensors.Vec{dim,T})
@@ -9,11 +9,6 @@ function spatial_nodal_coordinate(fe::FiniteElement{dim}, n_point::Int, x::Abstr
         vec += fe.M[i, n_point] * x[i]
     end
     return vec
-end
-
-function spatial_nodal_coordinate(fe::FiniteElement{dim,shape,1,1}, n_point::Int, x::AbstractVector{Tensors.Vec{dim,T}}) where {dim,shape,T}
-    @assert length(x) ==  getngeombasefunctions(fe)
-    return x[n_point]
 end
 
 """

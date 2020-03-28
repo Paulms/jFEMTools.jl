@@ -15,16 +15,9 @@ function DofHandler(mesh::AbstractPolytopalMesh{dim,T}, trialfuncs::Vector{Trial
     _distribute_dofs(dofhandler)
 end
 
-macro VarName(arg)
-          string(arg)
-end
-
 function Base.show(io::IO, dh::DofHandler)
     println(io, "DofHandler")
-    println(io, "  Fields:")
-    for i in 1:nvariables(dh)
-        println(io, "    ", repr(@VarName dh.variables[i]), ", Space: ", getfunctionspace(dh.variables[i]))
-    end
+    println(io, "  Number of Fields: ",nvariables(dh))
     println(io, "  Dofs per cell: ", ndofs_per_cell(dh))
     print(io, "  Total dofs: ", ndofs(dh))
 end

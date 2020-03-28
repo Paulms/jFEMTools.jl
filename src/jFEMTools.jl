@@ -12,7 +12,9 @@ import PlanarConvexHulls
 import StaticArrays
 
 # Abstract types
-abstract type AbstractVirtualElement end
+abstract type AbstractGalerkinElement end
+abstract type AbstractVirtualElement <: AbstractGalerkinElement end
+abstract type FiniteElement{dim,shape,FuncOrder,GeomOrder} <: AbstractGalerkinElement end
 abstract type AbstractPolytopalMesh{dim,T} end
 
 function Base.show(io::IO, mesh::AbstractPolytopalMesh{dim}) where {dim}
@@ -40,7 +42,7 @@ export PolytopalMesh2, rectangle_mesh2, unitSquareMesh2
 export  start_assemble, assemble!,
         end_assemble
 # TrialFunctions
-export TrialFunction
+export TrialFunction, TestFunction
 
 # Element
 export PoissonVirtualElement,LocalPoissonVirtualElement, VEMFunctionSpace
