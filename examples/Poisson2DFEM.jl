@@ -1,6 +1,7 @@
 using jFEMTools
 using Tensors
 using SparseArrays
+const jF = jFEMTools
 
 # We start  generating a simple grid with 20x20 triangular elements
 # using `unitSquareMesh2`. The generator defaults to the unit square,
@@ -10,7 +11,7 @@ mesh = unitSquareMesh2(TriangleCell, (3,3));
 # ### Initiate function Spaces
 dim = 2
 P1 = ContinuousLagrange(:Triangle,1)
-Wh = FEFunctionSpace(mesh, P1, dim)
+Wh = FEMFunctionSpace(mesh, P1, dim)
 
 # Declare variables
 u_h = TrialFunction(Wh)
@@ -19,16 +20,16 @@ v_h = TestFunction(Wh)
 # ### Degrees of freedom
 # Next we need to define a `DofHandler`, which will take care of numbering
 # and distribution of degrees of freedom for our approximated fields.
-# We create the `DofHandler` and then add a single field called `u`.
-dh = DofHandler(mesh,u_h);
+# We create the `DofHandler` and then add a single field called `u_h`.
+dh = DofHandler(mesh,[u_h])
 
 # Now that we have distributed all our dofs we can create our tangent matrix,
 # using `create_sparsity_pattern`. This function returns a sparse matrix
 # with the correct elements stored.
-K = create_sparsity_pattern(dh);
+K = jF.create_sparsity_pattern(dh)
 
 # ### Boundary conditions
-dbc = Dirichlet(dh, u_h, "boundary", x->0.0)
+dbc = Dirichlet(dh, u_h, "boundary", 0.0)
 
 # ### RHS function
 f(x::Vec{dim}) = 2*π^2*sin(π*x[1])*sin(π*x[2])

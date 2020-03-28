@@ -66,6 +66,7 @@ end
 @inline getngeombasefunctions(::ContinuousLagrange{1,Segment,order,gorder}) where {order,gorder} = gorder + 1
 @inline getngeombasefunctions(::ContinuousLagrange{2,Triangle,order,gorder}) where {order,gorder} = Int((gorder+1)*(gorder+2)/2)
 @inline gettopology(ip::ContinuousLagrange) = ip.topology
+gettopology(mesh::AbstractPolytopalMesh,cell, ip::ContinuousLagrange) = ip.topology
 @inline getgeomtopology(ip::ContinuousLagrange) = ip.geom_topology
 
 """
