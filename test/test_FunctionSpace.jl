@@ -11,8 +11,8 @@ mesh = unitSquareMesh2(TriangleCell, (2,2));
 # ### Define Function Spaces
 dim = 2
 finiteElement = ContinuousLagrange(:Triangle,1)
-Wh = FEFunctionSpace(mesh, finiteElement, 1)    #Scalar Space
-Vh = FEFunctionSpace(mesh, finiteElement, 2)    #Vector Space
+Wh = FEMFunctionSpace(mesh, finiteElement, 1)    #Scalar Space
+Vh = FEMFunctionSpace(mesh, finiteElement, 2)    #Vector Space
 
 # Basic Test
 @test jF.getnlocaldofs(Vh) == 6

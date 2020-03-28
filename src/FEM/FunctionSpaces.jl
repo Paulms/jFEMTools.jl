@@ -1,11 +1,9 @@
-abstract type AbstractDiscreteFunctionSpace{dim,T,FE} end
-
 mutable struct FEFSJacobians{dim,T,MM}
     detJ::T
     Jinv::Tensors.Tensor{2,dim,T,MM}
 end
 
-struct FEFunctionSpace{dim,T<:Real,FE<:FiniteElement,mtype <: AbstractPolytopalMesh,MM} <: AbstractDiscreteFunctionSpace{dim,T,FE}
+struct FEMFunctionSpace{dim,T<:Real,FE<:FiniteElement,mtype <: AbstractPolytopalMesh,MM} <: AbstractFEMFunctionSpace{dim,T,FE}
     N::Matrix{T}
     dNdx::Matrix{Vec{dim,T}}
     dNdξ::Matrix{Vec{dim,T}}
@@ -18,7 +16,9 @@ struct FEFunctionSpace{dim,T<:Real,FE<:FiniteElement,mtype <: AbstractPolytopalM
     components::Int
 end
 
-function Base.show(io::IO, fs::FEFunctionSpace)
+getelement(fs::FEMFunctionSpace) = fs.fe
+
+function Base.show(io::IO, fs::FEMFunctionSpace)
     if fs.components == 1
         println(io, "Discrete scalar function space")
     else
@@ -29,7 +29,7 @@ function Base.show(io::IO, fs::FEFunctionSpace)
     println(io, "Number of local dofs: ", getnlocaldofs(fs))
   end
 
-function FEFunctionSpace(mesh::AbstractPolytopalMesh, felem::FiniteElement{dim,shape,order,gorder}, components::Int;
+function FEMFunctionSpace(mesh::AbstractPolytopalMesh, felem::FiniteElement{dim,shape,order,gorder}, components::Int;
     quad_degree::Int = order+1) where {dim, shape, order,gorder}
     quad_rule = QuadratureRule{shape}(DefaultQuad(), quad_degree)
     _scalar_fs(Float64, mesh, quad_rule, felem, components)
@@ -66,11 +66,11 @@ function _scalar_fs(::Type{T}, mesh::AbstractPolytopalMesh{dim,T}, quad_rule::Qu
     MM = Tensors.n_components(Tensors.get_base(typeof(Jinv)))
 
     jacobians = FEFSJacobians{dim,T,MM}(detJ,Jinv)
-    FEFunctionSpace{dim,T,typeof(felem),typeof(mesh),MM}(N, dNdx, dNdξ,
+    FEMFunctionSpace{dim,T,typeof(felem),typeof(mesh),MM}(N, dNdx, dNdξ,
     M, dMdξ, getweights(quad_rule), felem, mesh,jacobians,components)
 end
 
-function reinit!(fs::FEFunctionSpace{dim}, x::AbstractVector{Vec{dim,T}}) where {dim,T}
+function reinit!(fs::FEMFunctionSpace{dim}, x::AbstractVector{Vec{dim,T}}) where {dim,T}
     n_geom_basefuncs = getngeombasefunctions(fs.fe)
     n_func_basefuncs = getnbasefunctions(fs.fe)
     @assert length(x) == n_geom_basefuncs
@@ -89,18 +89,19 @@ function reinit!(fs::FEFunctionSpace{dim}, x::AbstractVector{Vec{dim,T}}) where 
 end
 
 ########### Data Functions
-getngeobasefunctions(fs::AbstractDiscreteFunctionSpace) = size(fs.M, 1)
-getnquadpoints(fs::AbstractDiscreteFunctionSpace) = length(fs.qr_weights)
-getnbasefunctions(fs::AbstractDiscreteFunctionSpace) = size(fs.N,1)*fs.components
-getdetJdV(fs::FEFunctionSpace, q_point::Int) = fs.jacobians.detJ*fs.qr_weights[q_point]
-geometric_value(fs::AbstractDiscreteFunctionSpace, q_point::Int, base_func::Int) = fs.M[base_func, q_point]
-getdim(::AbstractDiscreteFunctionSpace{dim}) where {dim} = dim
-reference_coordinate(fs::AbstractDiscreteFunctionSpace{dim,T},cell::Int, mesh, x::Vec{dim,T}) where {dim,T} = fs.jacpbians.Jinv⋅(x-mesh.nodes[mesh.cells[cell].nodes[1]].x)
-getfiniteelement(fs::AbstractDiscreteFunctionSpace) = fs.fe
-getnlocaldofs(fs::AbstractDiscreteFunctionSpace) = getnbasefunctions(fs)
-getmesh(fs::AbstractDiscreteFunctionSpace) = fs.mesh
+getngeobasefunctions(fs::AbstractFEMFunctionSpace) = size(fs.M, 1)
+getnquadpoints(fs::AbstractFEMFunctionSpace) = length(fs.qr_weights)
+getnbasefunctions(fs::AbstractFEMFunctionSpace) = size(fs.N,1)*fs.components
+getdetJdV(fs::FEMFunctionSpace, q_point::Int) = fs.jacobians.detJ*fs.qr_weights[q_point]
+geometric_value(fs::AbstractFEMFunctionSpace, q_point::Int, base_func::Int) = fs.M[base_func, q_point]
+getdim(::AbstractFEMFunctionSpace{dim}) where {dim} = dim
+reference_coordinate(fs::AbstractFEMFunctionSpace{dim,T},cell::Int, mesh, x::Vec{dim,T}) where {dim,T} = fs.jacpbians.Jinv⋅(x-mesh.nodes[mesh.cells[cell].nodes[1]].x)
+getfiniteelement(fs::AbstractFEMFunctionSpace) = fs.fe
+getnlocaldofs(fs::AbstractFEMFunctionSpace) = getnbasefunctions(fs)
+getmesh(fs::AbstractFEMFunctionSpace) = fs.mesh
+getncomponents(fs::AbstractFEMFunctionSpace) = fs.components
 
-function shape_value(fs::AbstractDiscreteFunctionSpace{dim,T}, q_point::Int, base_func::Int) where {dim,T}
+function shape_value(fs::AbstractFEMFunctionSpace{dim,T}, q_point::Int, base_func::Int) where {dim,T}
     if fs.components == 1 
         fs.N[base_func, q_point]
     else
@@ -111,7 +112,7 @@ function shape_value(fs::AbstractDiscreteFunctionSpace{dim,T}, q_point::Int, bas
     end
 end
 
-function shape_gradient(fs::AbstractDiscreteFunctionSpace{dim,T}, q_point::Int, base_func::Int)  where {dim,T}
+function shape_gradient(fs::AbstractFEMFunctionSpace{dim,T}, q_point::Int, base_func::Int)  where {dim,T}
     if fs.components == 1
         fs.dNdx[base_func, q_point]
     else
@@ -122,7 +123,7 @@ function shape_gradient(fs::AbstractDiscreteFunctionSpace{dim,T}, q_point::Int, 
     end
 end
 
-function shape_divergence(fs::AbstractDiscreteFunctionSpace, q_point::Int, base_func::Int)
+function shape_divergence(fs::AbstractFEMFunctionSpace, q_point::Int, base_func::Int)
     if fs.components == 1
         sum(fs.dNdx[base_func, q_point])
     else

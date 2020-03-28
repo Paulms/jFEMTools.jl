@@ -7,8 +7,8 @@
     mesh = unitSquareMesh(TriangleCell, (2,2));
     dim = 2
     element = PoissonVirtualElement(dim,1);
-    u = TrialFunction(element)
-    dh = DofHandler(mesh, u);
+    u = TrialFunction(VEMFunctionSpace(mesh,element))
+    dh = DofHandler(mesh, [u]);
 
     # ### Boundary conditions
     dbc = Dirichlet(dh,u,"boundary",x -> 0);

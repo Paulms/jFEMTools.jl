@@ -1,4 +1,4 @@
-struct PoissonVirtualElement{dim} <: AbstractElement
+struct PoissonVirtualElement{dim} <: AbstractVirtualElement
     degree::Int
 end
 

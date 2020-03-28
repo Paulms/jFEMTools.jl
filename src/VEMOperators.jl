@@ -22,8 +22,8 @@ struct CellCache{ct}
   f
 end
 
-function VEMOperators(dof::DofHandler, u::TrialFunction{PoissonVirtualElement{dim}}; load = (x->0.0)) where {dim}
-    elements = get_local_elements(dof, u.element, load)
+function VEMOperators(dof::DofHandler, u::TrialFunction; load = (x->0.0)) where {dim,T}
+    elements = get_local_elements(dof, getelement(getfunctionspace(u)), load)
     VEMOperators(dof,elements)
 end
 

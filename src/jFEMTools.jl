@@ -12,7 +12,7 @@ import PlanarConvexHulls
 import StaticArrays
 
 # Abstract types
-abstract type AbstractElement end
+abstract type AbstractVirtualElement end
 abstract type AbstractPolytopalMesh{dim,T} end
 
 function Base.show(io::IO, mesh::AbstractPolytopalMesh{dim}) where {dim}
@@ -21,6 +21,11 @@ function Base.show(io::IO, mesh::AbstractPolytopalMesh{dim}) where {dim}
   println(io, "Number of cells: ", getncells(mesh))
   println(io, "Number of vertices: ", getnvertices(mesh))
 end
+
+# Abstract Discrete Function Spaces
+abstract type AbstractDiscreteFunctionSpace{dim,T} end
+abstract type AbstractFEMFunctionSpace{dim,T,FE} <: AbstractDiscreteFunctionSpace{dim,T} end
+abstract type AbstractVEMFunctionSpace{dim,T,FE} <: AbstractDiscreteFunctionSpace{dim,T} end
 
 # Mesh related functions
 export  rectangle_mesh, RectangleCell, TriangleCell, HexagonCell,
@@ -38,7 +43,7 @@ export  start_assemble, assemble!,
 export TrialFunction
 
 # Element
-export PoissonVirtualElement,LocalPoissonVirtualElement
+export PoissonVirtualElement,LocalPoissonVirtualElement, VEMFunctionSpace
 
 #VEM utils
 export DofHandler
@@ -48,7 +53,7 @@ export Dirichlet, apply!
 
 #FEM
 export ContinuousLagrange
-export FEFunctionSpace
+export FEMFunctionSpace
 
 include("FEM/shapes.jl")
 include("Quads/quadrature.jl")
@@ -67,6 +72,7 @@ include("assembler.jl")
 #include("plot_recipes.jl")
 include("PoissonVirtualElement.jl")
 include("DofHandler.jl")
+include("VEMFunctionSpace.jl")
 include("VEMOperators.jl")
 include("boundary.jl")
 include("FEM/basis.jl")

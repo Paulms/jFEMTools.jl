@@ -2,8 +2,8 @@ using jFEMTools
 using Tensors
 using SparseArrays
 
-# We start  generating a simple grid with 20x20 quadrilateral elements
-# using `generate_grid`. The generator defaults to the unit square,
+# We start  generating a simple grid with 20x20 triangular elements
+# using `unitSquareMesh2`. The generator defaults to the unit square,
 # so we don't need to specify the corners of the domain.
 mesh = unitSquareMesh2(TriangleCell, (3,3));
 

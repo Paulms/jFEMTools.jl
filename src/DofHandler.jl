@@ -10,27 +10,24 @@ struct DofHandler{dim,T}
     mesh::AbstractPolytopalMesh{dim,T}
 end
 
-function DofHandler(mesh::AbstractPolytopalMesh{dim,T}, u::TrialFunction) where {dim,T}
-    dofhandler = DofHandler{dim,T}([u], Int[], Int[], mesh)
+function DofHandler(mesh::AbstractPolytopalMesh{dim,T}, trialfuncs::Vector{TrialFunction{dim,T}}) where {dim,T}
+    dofhandler = DofHandler{dim,T}(trialfuncs, Int[], Int[], mesh)
     _distribute_dofs(dofhandler)
 end
 
-# macro VarName(arg)
-#           string(arg)
-# end
-# function Base.show(io::IO, dh::DofHandler)
-#     println(io, "DofHandler")
-#     println(io, "  Fields:")
-#     for i in 1:nvariables(dh)
-#         println(io, "    ", repr(@Name dh.variables[i]), ", interpolation: ", dh.field_interpolations[i],", dim: ", dh.field_dims[i])
-#     end
-#     if !isclosed(dh)
-#         print(io, "  Not closed!")
-#     else
-#         println(io, "  Dofs per cell: ", ndofs_per_cell(dh))
-#         print(io, "  Total dofs: ", ndofs(dh))
-#     end
-# end
+macro VarName(arg)
+          string(arg)
+end
+
+function Base.show(io::IO, dh::DofHandler)
+    println(io, "DofHandler")
+    println(io, "  Fields:")
+    for i in 1:nvariables(dh)
+        println(io, "    ", repr(@VarName dh.variables[i]), ", Space: ", getfunctionspace(dh.variables[i]))
+    end
+    println(io, "  Dofs per cell: ", ndofs_per_cell(dh))
+    print(io, "  Total dofs: ", ndofs(dh))
+end
 
 ndofs(dh::DofHandler) = maximum(dh.cell_dofs)
 ndofs_per_cell(dh::DofHandler, cell::Int=1) = dh.cell_dofs_offset[cell+1] - dh.cell_dofs_offset[cell]
@@ -46,7 +43,7 @@ end
 function field_offset(dh::DofHandler, field::TrialFunction, ci::Int)
     offset = 0
     for i in 1:find_field(dh, field)-1
-        offset += getnlocaldofs(dh.variables[i], getcells(dh.cells)[ci])::Int
+        offset += getnlocaldofs(getfunctionspace(dh.variables[i]), getcells(dh.cells)[ci])::Int
     end
     return offset
 end
@@ -59,7 +56,7 @@ Return the local dof range for `u`.
 function dof_range(dh::DofHandler, field::TrialFunction, ci::Int)
     f = find_field(dh, field)
     offset = field_offset(dh, field, ci)
-    n_field_dofs = getnlocaldofs(dh.variables[f],getcells(dh.mesh)[ci])
+    n_field_dofs = getnlocaldofs(getfunctionspace(dh.variables[f]),getcells(dh.mesh)[ci])
     return (offset+1):(offset+n_field_dofs)
 end
 
@@ -94,7 +91,7 @@ function _distribute_dofs(dh::DofHandler{dim,T}) where {dim,T}
         n_max_topology_elements = maximum(keys(gettopology(dh.mesh,cell)))
         geometric_cell_topology = gettopology(dh.mesh,cell)
         for fi in 1:nvariables(dh)
-            element = dh.variables[fi].element
+            element = getelement(getfunctionspace(dh.variables[fi]))
             cell_topology = gettopology(dh.mesh, cell, element)
             for n_element in 0:n_max_topology_elements-1
                 n_el_dofs_cell = cell_topology[n_element]
@@ -106,13 +103,13 @@ function _distribute_dofs(dh::DofHandler{dim,T}) where {dim,T}
                         token = ht_keyindex2!(topologyDicts[n_element][fi], element)
                         if token > 0 # reuse dofs
                             reuse_dof = topologyDicts[n_element][fi].vals[token]
-                            for d in 1:getncomponents(dh.variables[fi])
+                            for d in 1:getncomponents(getfunctionspace(dh.variables[fi]))
                                 push!(dh.cell_dofs, reuse_dof + (d-1))
                             end
                         else # token <= 0, distribute new dofs
                             for elementdof in 1:nelementdofs
                                 Base._setindex!(topologyDicts[n_element][fi], nextdof, element, -token)
-                                for d in 1:getncomponents(dh.variables[fi])
+                                for d in 1:getncomponents(getfunctionspace(dh.variables[fi]))
                                     push!(dh.cell_dofs, nextdof)
                                     nextdof += 1
                                 end
@@ -124,7 +121,7 @@ function _distribute_dofs(dh::DofHandler{dim,T}) where {dim,T}
             ncelldofs = cell_topology[dim]
             if ncelldofs > 0 # always distribute new dofs for cell
                 for celldof in 1:ncelldofs
-                    for d in 1:getncomponents(dh.variables[fi])
+                    for d in 1:getncomponents(getfunctionspace(dh.variables[fi]))
                         push!(dh.cell_dofs, nextdof)
                         nextdof += 1
                     end
@@ -144,10 +141,10 @@ function celldofs!(global_dofs::Vector{Int}, dh::DofHandler, i::Int)
 end
 
 function vertexdofs(dh::DofHandler, u::TrialFunction)
-    element = u.element
+    element = getelement(getfunctionspace(u))
     dofs = zeros(Int,getnvertices(dh.mesh))
     for (ci, cell) in enumerate(getcells(dh.mesh))
-        nv = gettopology(dh.mesh,cell, element)[0]*u.components
+        nv = gettopology(dh.mesh,cell, element)[0]*getncomponents(getfunctionspace(u))
         for i in dh.cell_dofs_offset[ci]:(dh.cell_dofs_offset[ci]+nv-1)
             dof = dh.cell_dofs[i]
             if !(dof ∈ dofs)                
