@@ -54,6 +54,7 @@ export assemble_stiffnessMat, assemble_massMat, assemble_load
 export Dirichlet, apply!
 
 #FEM
+export CellIterator
 export ContinuousLagrange
 export FEMFunctionSpace
 

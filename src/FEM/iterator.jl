@@ -41,4 +41,5 @@ function reinit!(ci::CellIterator{dim}, i::Int) where {dim}
 end
 
 @inline reinit!(fs::AbstractFEMFunctionSpace{dim,T,FE}, ci::CellIterator{dim,T}) where {dim,T,FE} = reinit!(fs, getverticescoords(ci.mesh, ci.celldata.cell))
-#function_value(f::Function, fs::DiscreteFunctionSpace{dim,T,FE}, ci::CellIterator,q_point::Int) where {dim,T,FE} = function_value(f,fs, ci.celldata.current_cellid,q_point)
+function_value(f::Function, fs::AbstractFEMFunctionSpace{dim,T,FE}, ci::CellIterator,q_point::Int) where {dim,T,FE} = function_value(f,fs, ci.celldata.current_cellid,q_point)
+celldofs!(v::Vector, dh::DofHandler, ci::CellIterator) = celldofs!(v, dh, ci.celldata.current_cellid)
