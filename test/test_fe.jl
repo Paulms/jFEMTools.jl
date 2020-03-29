@@ -8,19 +8,11 @@ jF = jFEMTools
 finiteElement = ContinuousLagrange(jF.Triangle,2)
 @test jF.gettopology(finiteElement) == Dict(0=>3,1=>3,2=>0)
 @test jF.getgeomtopology(finiteElement) == Dict(0=>3,1=>0,2=>0)
-x = [Vec{2}((1.0,1.0)),Vec{2}((2.0,1.0)),Vec{2}((2.0,2.0))]
-y = [Vec{2}((1.0,1.0)),Vec{2}((2.0,1.0)),Vec{2}((2.0,2.0)),Vec{2}((1.5,1.5)),Vec{2}((1.5,1.0)),Vec{2}((1.0,1.5))]
-for i in 1:3
-    @test jF.spatial_nodal_coordinate(finiteElement, i, x) == y[i]
-end
 
 finiteElement = ContinuousLagrange(jF.Triangle,1)
 @test finiteElement.nodal_base_coefs ≈ [0.23570226039551578 0.2357022603955159 0.2357022603955158;
                                  -0.14433756729740646 0.14433756729740646 0.0; -1/12 -1/12 1/6]
 @test jF.gettopology(finiteElement) == Dict(0=>3,1=>0,2=>0)
-for i in 1:3
-    @test jF.spatial_nodal_coordinate(finiteElement, i, x) == x[i]
-end
 
 # Test Lagrange Continuous Elements
 function ref_value(i::Int, ξ::Vec{2})
