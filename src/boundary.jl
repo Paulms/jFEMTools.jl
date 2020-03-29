@@ -5,7 +5,7 @@ struct Dirichlet{T}  #<: Constraint
 end
 
 function Dirichlet(dh::DofHandler{2}, u::TrialFunction, edgeset::String,f::Union{Function,Real})
-    element = u.element
+    element = getelement(getfunctionspace(u))
     edgeset = getedgeset(dh.mesh, edgeset)
     prescribed_dofs = Vector{Int}()
     values = Vector{Float64}()
@@ -38,14 +38,14 @@ function Dirichlet(dh::DofHandler{2}, u::TrialFunction, edgeset::String,f::Union
     return Dirichlet(prescribed_dofs[p], values[p])
 end
 
-function _push_values!(values::Vector, cell::Int, mesh,l_dof::Vector{Int}, felem::AbstractElement, f::Function)
+function _push_values!(values::Vector, cell::Int, mesh,l_dof::Vector{Int}, felem::AbstractGalerkinElement, f::Function)
     for i in l_dof
         vals = f(spatial_nodal_coordinate(mesh,cell,felem,i))
         push!(values,vals)
     end
 end
 
-function _push_values!(values::Vector, cell::Int, mesh,l_dof::Vector{Int}, felem::AbstractElement, vals::Real)
+function _push_values!(values::Vector, cell::Int, mesh,l_dof::Vector{Int}, felem::AbstractGalerkinElement, vals::Real)
     for i in l_dof
         push!(values,vals)
     end

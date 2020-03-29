@@ -1,4 +1,4 @@
-struct PoissonVirtualElement{dim} <: AbstractElement
+struct PoissonVirtualElement{dim} <: AbstractVirtualElement
     degree::Int
 end
 
@@ -24,7 +24,7 @@ function LocalPoissonVirtualElement(dim, degree, centroid, diameter)
         weights *= 0.5
         points = points .+ 1.0; points /= 2.0
     end
-    quad = QuadratureRule{1,Segment,Float64}(weights, [Tensors.Tensor{1,1}([x]) for x in points])
+    quad = QuadratureRule{Segment,1,Float64}(weights, [Tensors.Tensor{1,1}([x]) for x in points])
     LocalPoissonVirtualElement(degree, Pk_basis, quad)
 end
 

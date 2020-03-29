@@ -22,8 +22,8 @@ struct CellCache{ct}
   f
 end
 
-function VEMOperators(dof::DofHandler, u::TrialFunction{PoissonVirtualElement{dim}}; load = (x->0.0)) where {dim}
-    elements = get_local_elements(dof, u.element, load)
+function VEMOperators(dof::DofHandler, u::TrialFunction; load = (x->0.0)) where {dim,T}
+    elements = get_local_elements(dof, getelement(getfunctionspace(u)), load)
     VEMOperators(dof,elements)
 end
 
@@ -32,7 +32,7 @@ function get_local_elements(dof::DofHandler{2}, element::PoissonVirtualElement{2
     for (ci, cell) in enumerate(getcells(dof.mesh))
         vertices = getverticescoords(dof.mesh, ci)
         tess = get_2Dtesselation(vertices) #tesselate cell
-        quad = QuadratureRule{2,RefSimplex}(Strang(),get_degree(element))
+        quad = QuadratureRule{Triangle}(Strang(),get_degree(element))
         cache = CellCache(cell, ci, tess, quad,load)
         centroid = cell_centroid(dof.mesh, ci)
         diameter = cell_diameter(dof.mesh, ci)
@@ -74,7 +74,7 @@ function _compute_local_D(element::LocalPoissonVirtualElement, dof::DofHandler{2
         lap_basis = Monomials(2,degree-2,element.Pk_basis.centroid, element.Pk_basis.diameter)
         for i in (nv+ne*(degree-1)+1):ndofs, j in 1:nk
              for k in cache.tess
-               pt = mapPointsFromReference(RefSimplex,k,cache.quad.points);
+               pt = mapPointsFromReference(Triangle,k,cache.quad.points);
                for g in 1:size(pt,1)
                  D[i,j] = D[i,j] + 2*simplex_area(k)*
                    cache.quad.weights[g]*
@@ -101,7 +101,7 @@ function p0m(element::LocalPoissonVirtualElement, dof::DofHandler{2},cache::Cell
      P0m = P0m/nv
    else
      for k in cache.tess
-       pt = mapPointsFromReference(RefSimplex,k,cache.quad.points);
+       pt = mapPointsFromReference(Triangle,k,cache.quad.points);
        for g in 1:size(pt,1)
          P0m = P0m + 2*simplex_area(k)*
            cache.quad.weights[g]*value(element.Pk_basis, i, pt[g])
@@ -147,7 +147,7 @@ function _compute_local_G(element::LocalPoissonVirtualElement, dof::DofHandler{2
    else
      for i in 2:nk, j in 2:nk
          for k in cache.tess
-           pt = mapPointsFromReference(RefSimplex,k,cache.quad.points);
+           pt = mapPointsFromReference(Triangle,k,cache.quad.points);
            for g in 1:size(pt,1)
              G[i,j] = G[i,j] + 2*simplex_area(k)*
                 cache.quad.weights[g]*
@@ -275,7 +275,7 @@ function _compute_local_H(element::LocalPoissonVirtualElement, dof::DofHandler{2
 
   for i in 1:nk, j in 1:nk
       for k in cache.tess
-        pt = mapPointsFromReference(RefSimplex,k,cache.quad.points);
+        pt = mapPointsFromReference(Triangle,k,cache.quad.points);
         for g=1:size(pt,1)
           H[i,j] = H[i,j] + 2*simplex_area(k)*
             cache.quad.weights[g]*
@@ -299,7 +299,7 @@ function _compute_local_b(element::LocalPoissonVirtualElement, dof::DofHandler{2
     b = zeros(nk)
     for i in 1:nk
         for k in cache.tess
-          pt = mapPointsFromReference(RefSimplex,k,cache.quad.points);
+          pt = mapPointsFromReference(Triangle,k,cache.quad.points);
           for g=1:size(pt,1)
             b[i] = b[i] + 2*simplex_area(k)*
               cache.quad.weights[g]*

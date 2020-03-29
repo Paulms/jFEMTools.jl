@@ -12,8 +12,9 @@
     degree = 1;
     dim = 2;
     element = PoissonVirtualElement(dim,degree);
-    u = TrialFunction(element)
-    dofs = DofHandler(mesh, u);
+    Vh = VEMFunctionSpace(mesh,element)
+    u = TrialFunction(Vh)
+    dofs = DofHandler(mesh, [u]);
     operators = VEMOperators(dofs, u;load = rhs);
     # Test
     d = sqrt(2)
@@ -39,8 +40,8 @@
     degree = 2
     dim = 2
     element = PoissonVirtualElement(dim,degree)
-    u = TrialFunction(element)
-    dofs = DofHandler(mesh, u)
+    u = TrialFunction(VEMFunctionSpace(mesh,element))
+    dofs = DofHandler(mesh, [u])
     operators = VEMOperators(dofs, u;load = rhs)
     # Test
     d = sqrt(2)

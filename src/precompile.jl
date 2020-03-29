@@ -1,9 +1,7 @@
 function _precompile_()
     ccall(:jl_generating_output, Cint, ()) == 1 || return nothing
     precompile(Tuple{typeof(cell_centroid),PolytopalMesh{2,Float64,jFEMTools.Cell{2,4,4,1}},Int64})
-    precompile(Tuple{Type{jFEMTools.QuadratureRule{2,jFEMTools.RefSimplex,T} where T},jFEMTools.Strang,Int64})
     precompile(Tuple{typeof(jFEMTools.gradient_value),jFEMTools.Monomials{2,1,Float64},Int64,Tensors.Tensor{1,2,Float64,2}})
-    precompile(Tuple{typeof(jFEMTools.mapPointsFromReference),Type{jFEMTools.RefSimplex},Array{Tensors.Tensor{1,2,Float64,2},1},Array{Tensors.Tensor{1,2,Float64,2},1}})
     precompile(Tuple{Type{jFEMTools.Monomials},Int64,Int64,Tensors.Tensor{1,2,Float64,2},Float64})
     precompile(Tuple{typeof(jFEMTools.value),jFEMTools.Monomials{2,1,Float64},Int64,Tensors.Tensor{1,2,Float64,2}})
     precompile(Tuple{typeof(jFEMTools.getverticesindices),PolytopalMesh{2,Float64,jFEMTools.Cell{2,4,4,1}},jFEMTools.EdgeIndex})

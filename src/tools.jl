@@ -10,15 +10,15 @@ end
 """ Compute volume of a simplex spanned by vertices `verts` """
 function simplex_area(verts::Vector{Tensors.Vec{N, T}}) where {N,T}
     # Volume of reference simplex element is 1/n!
-    ref_verts = reference_coordinates(RefSimplex, Val{N})
+    ref_verts = reference_coordinates(Simplex{N})
     A, b = get_affine_map(ref_verts, verts)
     F = svd(A)
     return *(F.S...)/factorial(N)
 end
 
 """ Map points points from reference simplex to simplex K """
-function mapPointsFromReference(::Type{RefSimplex}, K::Vector{Tensors.Vec{N, T}}, points::Vector{Tensors.Vec{N, T}}) where {N,T}
-    ref_verts = reference_coordinates(RefSimplex, Val{N})
+function mapPointsFromReference(::Type{Simplex{N}}, K::Vector{Tensors.Vec{N, T}}, points::Vector{Tensors.Vec{N, T}}) where {N,T}
+    ref_verts = reference_coordinates(Simplex{N})
     A, b = get_affine_map(ref_verts, K)
     return [Tensors.Vec{N}(A*x+Tensors.Vec{N}(b)) for x in points]
 end

@@ -8,4 +8,7 @@ using Test
     @time include("test_quads.jl")
     @time include("test_assembler.jl")
     @time include("test_2d_vem_poisson.jl")
+    @time include("test_basis.jl")
+    @time include("test_fe.jl")
+    @time include("test_FunctionSpace.jl")
 end

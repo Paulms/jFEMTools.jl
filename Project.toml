@@ -16,7 +16,7 @@ VoronoiDelaunay = "72f80fcb-8c52-57d9-aff0-40c1a3526986"
 FastGaussQuadrature = "0.4"
 PlanarConvexHulls = "0.3"
 StaticArrays = "0.12"
-Tensors = "1.4"
+Tensors = "1"
 VoronoiDelaunay = "0.4"
 julia = "≥ 1.2.0"
 

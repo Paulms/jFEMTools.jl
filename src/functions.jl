@@ -1,12 +1,13 @@
-struct TrialFunction{T<:AbstractElement}
-    element::T
-    components::Int
+struct TrialFunction{dim,T}
+    fs::AbstractDiscreteFunctionSpace{dim,T}
 end
 
-TrialFunction(el::AbstractElement) = TrialFunction(el,1)
+@inline getfunctionspace(u::TrialFunction) = u.fs
 
-function getnlocaldofs(u::TrialFunction, cell::Cell)
-    getnlocaldofs(u.element, cell)*u.components
+# Test Functions
+
+struct TestFunction{dim,T}
+    fs::AbstractDiscreteFunctionSpace{dim,T}
 end
 
-getncomponents(u::TrialFunction) = u.components
+@inline getfunctionspace(u::TestFunction) = u.fs
