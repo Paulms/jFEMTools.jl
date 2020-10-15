@@ -42,7 +42,7 @@ function _nodal_data(dim::Int,shape, order::Int)
     nodal_points, topology = get_nodal_points(shape, order)
     ip_prime = getdefaultdualbasis(shape,order)
     nbasefuncs = getnbasefunctions(ip_prime)
-    V = [value(ip_prime, j, nodal_points[i]) for i=1:nbasefuncs,j = 1:nbasefuncs]
+    V = [value(ip_prime, j, nodal_points[i]) for i=1:nbasefuncs,j = 1:nbasefuncs]   #l_i(ϕ) = ϕ(x_i)
     return inv(V), topology
 end
 
