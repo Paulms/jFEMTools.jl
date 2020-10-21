@@ -13,6 +13,9 @@ struct Cell{dim, N, M, L}
 end
 
 #Common cell types
+const LineCell = Cell{1,2,1,1}
+@inline get_cell_name(::LineCell) = "Line"
+
 const TriangleCell = Cell{2,3,3,1}
 @inline get_cell_name(::TriangleCell) = "Triangle"
 @inline reference_edge_vertices(::TriangleCell) = ((2,3),(3,1),(1,2))
@@ -25,6 +28,12 @@ const RectangleCell = Cell{2,4,4,1}
 
 const HexagonCell = Cell{2,6,6,1}
 @inline get_cell_name(::HexagonCell) = "Hexagon"
+
+const TetrahedronCell = Cell{3,4,6,4}
+@inline get_cell_name(::TetrahedronCell) = "Tetrahedron"
+
+const HexahedronCell = Cell{3,8,12,6}
+@inline get_cell_name(::HexahedronCell) = "Hexahedron"
 
 # API
 @inline getnvertices(cell::Cell{dim,N}) where {dim,N} = N

@@ -1,5 +1,6 @@
 import Tensors
 using jFEMTools
+import WriteVTK
 
 nel = (2,2)
 LL = Tensors.Vec{2}((0.0,0.0))
@@ -14,3 +15,12 @@ include("src/plot_recipes.jl")
 #AbstractPlotting.inline!(true)
 scene = Scene(resolution = (400, 200))
 plot!(scene, mesh)
+
+nel = (2,2,2)
+mesh3D_1 = hyper_rectagle_mesh2(HexahedronCell,nel)
+vtk_file = vtk_grid("hexahedron_mesh", mesh3D_1)
+outfiles = WriteVTK.vtk_save(vtk_file)
+
+
+
+mesh3D_2 = hyper_rectagle_mesh2(TetrahedronCell,nel)

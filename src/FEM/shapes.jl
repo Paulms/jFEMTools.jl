@@ -26,6 +26,31 @@ function gettopology(::Type{Triangle})
     return Dict(0=>3,1=>3,2=>1)
 end
 
+##########################
+# Tetrahedron
+######################
+
+const Tetrahedron = Simplex{3}
+
+get_num_faces(::Type{Tetrahedron}) = 3
+get_num_vertices(::Type{Tetrahedron}) = 3
+
+function reference_coordinates(::Type{Tetrahedron})
+    [Tensors.Vec{3, Float64}((0.0, 0.0,0.0)),
+     Tensors.Vec{3, Float64}((1.0, 0.0,0.0)),
+     Tensors.Vec{3, Float64}((0.0,1.0, 0.0)),
+     Tensors.Vec{3, Float64}((0.0,0.0, 1.0))]
+end
+function reference_edges(::Type{Tetrahedron})
+    coords = reference_coordinates(Tetrahedron)
+    [[coords[i[1]], coords[i[2]]] for i in reference_edge_nodes(Tetrahedron)]
+end
+reference_edge_nodes(::Type{Tetrahedron}) = ((1,2),(2,3),(3,4),(4,1))
+
+function gettopology(::Type{Tetrahedron})
+    return Dict(0=>4,1=>6,2=>4,3=>1)
+end
+
 """
 get points for a nodal basis of order `order` on a `dim`
     dimensional simplex

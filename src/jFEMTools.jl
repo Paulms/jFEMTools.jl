@@ -10,6 +10,7 @@ import FastGaussQuadrature
 import VoronoiDelaunay
 import PlanarConvexHulls
 import StaticArrays
+import WriteVTK
 
 # Abstract types
 abstract type AbstractGalerkinElement end
@@ -30,7 +31,7 @@ abstract type AbstractFEMFunctionSpace{dim,T,FE} <: AbstractDiscreteFunctionSpac
 abstract type AbstractVEMFunctionSpace{dim,T,FE} <: AbstractDiscreteFunctionSpace{dim,T} end
 
 # Mesh related functions
-export  rectangle_mesh, RectangleCell, TriangleCell, HexagonCell,
+export  rectangle_mesh, RectangleCell, TriangleCell, HexagonCell, HexahedronCell, TetrahedronCell,
         getncells, getverticesidx, getverticescoords,
         getnedges, cell_volume, cell_centroid, cell_diameter,
         mapToGlobalIdx, getvertexset, getvertexcoords,
@@ -38,6 +39,7 @@ export  rectangle_mesh, RectangleCell, TriangleCell, HexagonCell,
   PolytopalMesh, unitSquareMesh, getnfacets
 export FaceIndex, EdgeIndex, FacetIndex
 export PolytopalMesh2, rectangle_mesh2, unitSquareMesh2
+export hyper_rectagle_mesh2
 # Assembler
 export  start_assemble, assemble!,
         end_assemble
@@ -57,6 +59,9 @@ export Dirichlet, apply!
 export CellIterator
 export ContinuousLagrange
 export FEMFunctionSpace
+
+#IO
+export vtk_grid
 
 include("FEM/shapes.jl")
 include("Quads/quadrature.jl")
@@ -83,6 +88,7 @@ include("FEM/FiniteElement.jl")
 include("FEM/LagrangeFE.jl")
 include("FEM/FunctionSpaces.jl")
 include("FEM/iterator.jl")
+include("IO/vtk.jl")
 
 # SnoopCompile output
 include("precompile.jl")

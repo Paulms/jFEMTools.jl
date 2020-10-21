@@ -5,7 +5,17 @@ using Tensors
 import Tensors: Vec, gradient, norm
 jF = jFEMTools
 
-#Test Dubiner base
+#Test Dubiner 3d basis  
+@show "Testing Dubiner 3D basis"
+interpolation = jF.Dubiner{jF.Tetrahedron,3}()
+exact_val = [0.8660254037844386,2.7386127875258306,0.8660254037844386,1.118033988749895,
+            7.685213074469699,5.477225575051661,6.48074069840786,1.71846588560844,
+            3.7416573867739413,-0.33071891388307384]
+for i in 1:10
+    @test jF.dubiner_basis(0.5,0.5,0.5,i,2) ≈ exact_val[i]
+end
+
+#Test Dubiner 2d base
 interpolation = jF.Dubiner{jF.Triangle,4}()
 quad_rule = jF.QuadratureRule{jF.Triangle}(jF.Strang(),5)
 

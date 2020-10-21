@@ -54,9 +54,10 @@ struct Dubiner{shape,order} <: Interpolation{shape,order} end
 isnodal(ip::Dubiner) = false
 
 getnbasefunctions(::Dubiner{Triangle,order}) where {order} = Int((order+1)*(order+2)/2)
+getnbasefunctions(::Dubiner{Tetrahedron,order}) where {order} = Int((order+1)*(order+2)*(order+3)/6)
 
 """
-value(ip::Dubiner{2,RefTetrahedron,order}, j::Int, ξ::AbstactVector) where {order}
+value(ip::Dubiner{Triangle,order}, j::Int, ξ::AbstactVector) where {order}
 Compute value of dubiner basis `j` at point ξ
 on the reference triangle ((0,0),(1,0),(0,1))
 """
@@ -71,7 +72,24 @@ function value(ip::Dubiner{Triangle,order}, j::Int, ξ::Tensors.Vec{2,T}) where 
 end
 
 """
-gradient_value(ip::Dubiner{2,RefTetrahedron,order}, j::Int, ξ::AbstactVector) where {order}
+value(ip::Dubiner{Tetrahedron,order}, j::Int, ξ::AbstactVector) where {order}
+Compute value of dubiner basis `j` at point ξ
+on the reference Tetrahedron ((0,0,0),(1,0,0),(0,1,0),(0,0,1))
+"""
+function value(ip::Dubiner{Tetrahedron,order}, j::Int, ξ::Tensors.Vec{3,T}) where {order, T}
+    x = ξ[1]
+    y = ξ[2]
+    z = ξ[3]
+
+    if j == 0
+        return zero(T)
+    else 
+        return dubiner_basis(x,y,z,j,order)
+    end
+end
+
+"""
+gradient_value(ip::Dubiner{Triangle,order}, j::Int, ξ::AbstactVector) where {order}
 Compute gradient of dubiner basis `j` at point ξ
 on the reference triangle ((0,0),(1,0),(0,1))
 """
@@ -80,10 +98,19 @@ function gradient_value(ip::Dubiner{Triangle,order}, j::Int, ξ::Tensors.Vec{2,T
     Tensors.gradient(ξ -> value(ip, j, ξ), ξ)
 end
 
+"""
+gradient_value(ip::Dubiner{Tetrahedron,order}, j::Int, ξ::AbstactVector) where {order}
+Compute gradient of dubiner basis `j` at point ξ
+on the reference Tetrahedron
+"""
+function gradient_value(ip::Dubiner{Tetrahedron,order}, j::Int, ξ::Tensors.Vec{2,T}) where {order, T}
+    if j >getnbasefunctions(ip);throw(ArgumentError("no shape function $j for interpolation $ip"));end
+    Tensors.gradient(ξ -> value(ip, j, ξ), ξ)
+end
 
 """
     jacobi(x, p::Integer, α, β)
-Evaluate the Legendre polynomial with parameters `α`, `β` of degree `p` at `x`
+Evaluate the ξ[2][2] polynomial with parameters `α`, `β` of degree `p` at `x`
 using the three term recursion [Karniadakis and Sherwin, Spectral/hp Element
 Methods for CFD, Appendix A].
 Author: H. Ranocha (see PolynomialBases.jl)
@@ -139,6 +166,94 @@ function dubiner_basis(x,y,j::Integer)
     m=ceil(t)-n
     #Compute Dubiner_nm(ξ, η)
     return dubiner(x,y,Int(n),Int(m))
+end
+
+function jrc(a, b, n)
+    an = (2*n+1+a+b)*(2*n+2+a+b) / (2*(n+1)*(n+1+a+b))
+    bn = (a*a-b*b) * (2*n+1+a+b) / (2*(n+1)*(2*n+a+b)*(n+1+a+b))
+    cn = (n+a)*(n+b)*(2*n+2+a+b) / ((n+1)*(n+1+a+b)*(2*n+a+b))
+    return an, bn, cn
+end
+
+function _dubiner(x,y,z,j::Int, n::Int)
+    idx(p, q, r) = (p + q + r)*(p + q + r + 1)*(p + q + r + 2) ÷ 6 + (q + r)*(q + r + 1) ÷ 2 + r + 1
+ 
+    f1 = 0.5 * (2.0 + 2.0 * x + y + z)
+    f2 = (0.5 * (y + z))^2
+    f3 = 0.5 * (1 + 2.0 * y + z)
+    f4 = 0.5 * (1 - z)
+    f5 = f4^2
+
+    result(idx) = _dubiner(x,y,z,idx,n)[1]
+
+    if j == 1; return 1.0,0,0,0; end
+    if j == 2; return f1,1,0,0; end
+
+    for p in 1:(n-1)
+        a1 = (2.0 * p + 1.0) / (p + 1.0)
+        a2 = p / (p + 1.0)
+        if j == idx(p+1, 0, 0)
+            return a1 * f1 * result(idx(p, 0, 0)) - a2 * f2 * result(idx(p-1, 0, 0)),p+1,0,0
+        end
+    end
+
+    for p in 0:(n-1)
+        if j == idx(p,1,0)
+            return result(idx(p, 0, 0)) * (p * (1.0 + y) + (2.0 + 3.0 * y + z) / 2),p,0,0
+        end
+    end
+
+    for p in 0:(n-2), q in 1:(n-p-1)
+        if j == idx(p,q+1,0)
+            (aq, bq, cq) = jrc(2 * p + 1, 0, q)
+            qmcoeff = aq * f3 + bq * f4
+            qm1coeff = cq * f5
+            return qmcoeff * result(idx(p, q, 0)) - qm1coeff * result(idx(p, q-1, 0)), p,q+1,0
+        end
+    end
+
+    for p in 0:(n-1), q in 0:(n-p-1)
+        if j == idx(p,q,1)
+            return result(idx(p, q, 0)) * (1.0 + p + q + (2.0 + q + p) * z),p,q,1
+        end
+    end
+
+    for p in 0:(n-2), q in 0:(n-p-2), r in 1:(n - p - q-1)
+        if j == idx(p,q,r+1)
+            ar, br, cr = jrc(2 * p + 2 * q + 2, 0, r)
+            return (ar * z + br) * result(idx(p, q, r)) - cr * result(idx(p, q, r-1)),p,q,r+1
+        end
+    end
+end
+
+"""
+dubiner_basis(x,y,z,j::Integer, k::int)
+Evaluate the dubiner basis `j` of order `n` at point (x,y,z)
+on the reference Tetrahedron
+"""
+function dubiner_basis(x,y,z,j::Int, n::Int)
+
+    if n == 0; return 1.0; end
+
+    ref_tetra_coords = [Tensors.Vec{3, Float64}((-1.0, -1.0,-1.0)),
+                        Tensors.Vec{3, Float64}((1.0, -1.0,-1.0)),
+                        Tensors.Vec{3, Float64}((-1.0,1.0, -1.0)),
+                        Tensors.Vec{3, Float64}((-1.0,-1.0, 1.0))]
+
+
+    A,b = get_affine_map(reference_coordinates(Tetrahedron), ref_tetra_coords)
+    ref_pts = A*[x,y,z] + b
+
+    x = ref_pts[1]
+    y = ref_pts[2]
+    z = ref_pts[3]
+
+    scale_factor(p,q,r) = sqrt((p+0.5)*(p+q+1.0)*(p+q+r+1.5))
+
+    result,p,q,r = _dubiner(x,y,z,j,n)
+
+    return result*scale_factor(p,q,r)
+ 
 end
 
 ####################
