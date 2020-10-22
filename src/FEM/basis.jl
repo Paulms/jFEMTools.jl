@@ -269,10 +269,10 @@ isnodal(ip::Lagrange) = true
 function getdefaultdualbasis(shape::Type{s},order::Int) where {s<:Shape}
     if getdim(shape()) == 1
         return Legendre{shape,order}()
-    elseif getdim(shape()) == 2
+    elseif (getdim(shape()) == 2 || getdim(shape()) == 3) && shape <: Simplex
         return Dubiner{shape,order}()
     else
-        throw("Not dual basis available for dimension $dim")
+        throw("Not dual basis available for shape $shape")
     end
 end
 

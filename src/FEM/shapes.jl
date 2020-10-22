@@ -55,13 +55,13 @@ end
 get points for a nodal basis of order `order` on a `dim`
     dimensional simplex
 """
-function get_nodal_points(::Type{Triangle}, order)
-    points = Vector{Tensors.Vec{2,Float64}}()
-    vertices = reference_coordinates(Triangle)
+function get_nodal_points(::Type{Simplex{dim}}, order) where {dim}
+    points = Vector{Tensors.Vec{dim,Float64}}()
+    vertices = reference_coordinates(Simplex{dim})
     topology = Dict{Int, Int}()
     append!(points, vertices)
     push!(topology, 0=>length(points))
-    [append!(points, _interior_points(verts, order)) for verts in reference_edges(Triangle)]
+    [append!(points, _interior_points(verts, order)) for verts in reference_edges(Simplex{dim})]
     push!(topology, 1=>length(points)-topology[0])
     append!(points, _interior_points(vertices, order))
     push!(topology, 2=>length(points)-topology[0]-topology[1])
@@ -152,6 +152,37 @@ reference_edge_nodes(::Type{Hexahedron}) = ((1,2),(2,3),(3,4),(4,1),(5,6),(6,7),
 
 function gettopology(::Type{Hexahedron})
     return Dict(0=>8,1=>12,2=>6,3=>1)
+end
+
+"""
+get points for a nodal basis of order `order` on a `dim`
+    dimensional hypercube
+"""
+function get_nodal_points(::Type{Rectangle}, order)
+    points = Vector{Tensors.Vec{2,Float64}}()
+    vertices = reference_coordinates(Rectangle)
+    topology = Dict{Int, Int}()
+    append!(points, vertices)
+    push!(topology, 0=>length(points))
+    [append!(points, _interior_points(verts, order)) for verts in reference_edges(Rectangle)]
+    push!(topology, 1=>length(points)-topology[0])
+    append!(points, _cube_interior_points(vertices, order))
+    push!(topology, 2=>length(points)-topology[0]-topology[1])
+    points, topology
+end
+
+function _cube_interior_points(verts, order)
+    n = length(verts)
+    ls = [(verts[i] - verts[1])/order for i in 2:n]
+    lx = ls[1]
+    for point in ls
+        any([x ≈ 0 for x in point]) 
+        if !any([x ≈ 0 for x in point])
+            lx = point
+        end
+    end
+        
+    [eltype(verts)((verts[1][1]+i*lx[1],verts[1][2]+j*lx[2])) for i in 1:order-1 for j in 1:order-1]
 end
 
 ############
