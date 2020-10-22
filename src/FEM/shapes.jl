@@ -89,6 +89,71 @@ function _interior_points(verts, order)
     pts
 end
 
+#########################
+# Rectangles  #
+#########################
+struct HyperCube{dim} <: Shape{dim} end
+const Rectangle = HyperCube{2}
+@inline get_num_faces(::Type{Rectangle}) = 4
+@inline get_num_vertices(::Type{Rectangle}) = 4
+
+function reference_coordinates(::Type{Rectangle})
+    [Tensors.Vec{2, Float64}((0.0, 0.0)),
+    Tensors.Vec{2, Float64}((1.0, 0.0)),
+    Tensors.Vec{2, Float64}((0.0, 1.0)),
+    Tensors.Vec{2, Float64}((1.0, 1.0))]
+end
+function reference_edges(::Type{Rectangle})
+    [[Tensors.Vec{2, Float64}((1.0, 0.0)),Tensors.Vec{2, Float64}((1.0, 1.0))],
+     [Tensors.Vec{2, Float64}((1.0, 1.0)),Tensors.Vec{2, Float64}((0.0, 1.0))],
+     [Tensors.Vec{2, Float64}((0.0, 1.0)),Tensors.Vec{2, Float64}((0.0, 0.0))],
+     [Tensors.Vec{2, Float64}((0.0, 0.0)),Tensors.Vec{2, Float64}((1.0, 0.0))]]
+end
+@inline reference_edge_nodes(::Type{Rectangle}) = ((1,2),(2,3),(3,4),(4,1))
+
+function gettopology(::Type{Rectangle})
+    return Dict(0=>4,1=>4,2=>1)
+end
+
+##########################
+# Hexahedron
+######################
+
+const Hexahedron = HyperCube{3}
+
+get_num_faces(::Type{Hexahedron}) = 6
+get_num_vertices(::Type{Hexahedron}) = 8
+
+function reference_coordinates(::Type{Hexahedron})
+    [Tensors.Vec{3, Float64}((0.0, 0.0,0.0)),
+     Tensors.Vec{3, Float64}((1.0, 0.0,0.0)),
+     Tensors.Vec{3, Float64}((1.0,0.0, 1.0)),
+     Tensors.Vec{3, Float64}((0.0,0.0, 1.0)),
+     Tensors.Vec{3, Float64}((0.0,1.0, 0.0)),
+     Tensors.Vec{3, Float64}((1.0,1.0, 0.0)),
+     Tensors.Vec{3, Float64}((1.0,1.0, 1.0)),
+     Tensors.Vec{3, Float64}((0.0,1.0, 1.0))]
+end
+function reference_edges(::Type{Hexahedron})
+    [[Tensors.Vec{3, Float64}((1.0, 0.0,0.0)),Tensors.Vec{3, Float64}((1.0, 0.0,1.0))],
+    [Tensors.Vec{3, Float64}((1.0, 0.0,1.0)),Tensors.Vec{3, Float64}((0.0, 0.0,1.0))],
+    [Tensors.Vec{3, Float64}((0.0, 0.0,1.0)),Tensors.Vec{3, Float64}((0.0, 0.0,0.0))],
+    [Tensors.Vec{3, Float64}((0.0, 0.0,0.0)),Tensors.Vec{3, Float64}((1.0, 0.0,0.0))],
+    [Tensors.Vec{3, Float64}((1.0, 0.0,0.0)),Tensors.Vec{3, Float64}((1.0, 1.0,1.0))],
+    [Tensors.Vec{3, Float64}((1.0, 0.0,1.0)),Tensors.Vec{3, Float64}((0.0, 1.0,1.0))],
+    [Tensors.Vec{3, Float64}((0.0, 0.0,1.0)),Tensors.Vec{3, Float64}((0.0, 1.0,0.0))],
+    [Tensors.Vec{3, Float64}((0.0, 0.0,0.0)),Tensors.Vec{3, Float64}((1.0, 1.0,0.0))],
+    [Tensors.Vec{3, Float64}((0.0, 0.0,0.0)),Tensors.Vec{3, Float64}((0.0, 1.0,0.0))],
+    [Tensors.Vec{3, Float64}((1.0, 0.0,0.0)),Tensors.Vec{3, Float64}((1.0, 1.0,0.0))],
+    [Tensors.Vec{3, Float64}((1.0, 0.0,1.0)),Tensors.Vec{3, Float64}((1.0, 1.0,1.0))],
+    [Tensors.Vec{3, Float64}((0.0, 0.0,1.0)),Tensors.Vec{3, Float64}((0.0, 1.0,1.0))]]
+end
+reference_edge_nodes(::Type{Hexahedron}) = ((1,2),(2,3),(3,4),(4,1),(5,6),(6,7),(7,8),(8,5),(1,5),(2,6),(3,7),(4,8))
+
+function gettopology(::Type{Hexahedron})
+    return Dict(0=>8,1=>12,2=>6,3=>1)
+end
+
 ############
 # Segment
 ###########
