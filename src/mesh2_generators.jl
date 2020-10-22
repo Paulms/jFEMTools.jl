@@ -307,6 +307,58 @@ function _build_hexahedron_geometry!(geometry,indices, offsets, nel, nedges,nfac
     push!(geometry,(1,0)=>V)
   end
 
+  function _build_tetrahedron_geometry!(geometry,indices, offsets, nel, nedges,nfaces)
+    indices1 = [Int[] for _ in 1:nel]
+    indices2 = [Int[] for _ in 1:nfaces]
+    indices3 = [Int[] for _ in 1:nel]
+    indices4 = [Int[] for _ in 1:nedges]
+    facesDict = Dict{Set{Int},Int}()
+    edgesDict = Dict{Set{Int},Int}()
+    nextidx = 1 #first face index
+    next_e_idx = 1 #first face index
+    for cell in 1:nel
+        nodes = indices[offsets[cell]:offsets[cell+1]-1]
+        # Compute faces geometries
+        Vi = [nodes[1:3],nodes[2:4],nodes[[1,3,4]],nodes[[1,2,3]]]
+        for vi in Vi
+            token = Base.ht_keyindex2!(facesDict, Set(vi))
+            if token > 0 # reuse edge index
+            reuse_idx = facesDict.vals[token]
+            push!(indices1[cell], reuse_idx)
+            else
+            push!(indices1[cell], nextidx)
+            indices2[nextidx] = vi
+            Base._setindex!(facesDict, nextidx, Set(vi), -token)
+            nextidx += 1
+            end
+        end
+        # Compute edges geometries
+        N = size(nodes,1)
+        idx = Tuple((i,mod1(i+1,N)) for i in 1:N)
+        Vi = [[nodes[x[1]],nodes[x[2]]] for x in idx]
+        for vi in Vi
+            token = Base.ht_keyindex2!(edgesDict, Set(vi))
+            if token > 0 # reuse edge index
+            reuse_idx = edgesDict.vals[token]
+            push!(indices3[cell], reuse_idx) 
+            else
+            push!(indices3[cell], next_e_idx)
+            indices4[next_e_idx] = vi
+            Base._setindex!(edgesDict, next_e_idx, Set(vi), -token)
+            next_e_idx += 1
+            end
+        end
+    end
+    V = _pack_connectivity(indices1)
+    push!(geometry,(3,2)=>V)
+    V = _pack_connectivity(indices2)
+    push!(geometry,(2,0)=>V)
+    V = _pack_connectivity(indices3)
+    push!(geometry,(3,1)=>V)
+    V = _pack_connectivity(indices4)
+    push!(geometry,(1,0)=>V)
+  end
+
 #####################################
 # Hexahedron 3D
 #####################################
@@ -427,9 +479,10 @@ function hyper_rectagle_mesh2(::Type{TetrahedronCell}, nel::NTuple{3,Int}, left:
     end
 
     geometry = Dict((3,0) => MeshConectivity(Tuple(indices), Tuple(offsets)))
-    n_edges = 2*(nel_x+nel_y+nel_x*nel_y)*(nel_z+1) + (2*nel_y+1)*nel_z*(nel_x+1) + nel_y*nel_x*nel_z
+    n_edges = (nel_x+nel_y+3*nel_x*nel_y)*(nel_z+1) + (nel_z+2*nel_z*nel_y)*(nel_x+1) + nel_x*nel_z*(nel_y+1) + nel_y*nel_x*nel_z
     n_faces = 2*(nel_x*nel_y*(nel_z+1)+nel_y*nel_z*(nel_x+1)+nel_x*nel_z*(nel_y+1)) + 6*nel_x*nel_y*nel_z
     entities = (n_nodes, n_edges, n_faces,nel_tot)
+    _build_tetrahedron_geometry!(geometry, indices, offsets,nel_tot, n_edges, n_faces)
 
     # Order the cells as c_nxyz[n, x, y, z] such that we can look up boundary cells
     c_nxyz = reshape(1:nel_tot, (cells_per_cube, nel...))
