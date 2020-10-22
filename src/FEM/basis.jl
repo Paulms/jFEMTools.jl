@@ -256,6 +256,64 @@ function dubiner_basis(x,y,z,j::Int, n::Int)
  
 end
 
+########################3
+# Quadrangule Gauss
+#######################
+
+struct QuadranguleGauss{shape,order} <: Interpolation{shape,order} end
+isnodal(ip::QuadranguleGauss) = true
+
+getnbasefunctions(::QuadranguleGauss{Rectangle,order}) where {order} = (order+1)^2
+getnbasefunctions(::QuadranguleGauss{Hexahedron,order}) where {order} = (order+1)^3
+
+"""
+value(ip::QuadranguleGauss{Rectangle,order}, j::Int, ξ::AbstactVector) where {order}
+Compute value of dubiner basis `j` at point ξ
+on the reference Rectangle ((0,0),(1,0),(0,1),(1,1))
+"""
+function value(ip::QuadranguleGauss{Rectangle,order}, j::Int, ξ::Tensors.Vec{2,T}) where {order, T}
+    if j == 0
+        return zero(T)
+    else 
+        return quadrangule_gauss_2d(ξ[1],ξ[2],j,order)
+    end
+end
+
+function quadrangule_gauss_2d(x,y,k::Int, order::Int)
+    p,_ = FastGaussQuadrature.gausslobatto(order+1)
+    #scale to 0 - 1
+    p = (p .+ 1)./2
+    # Lagrange interpolation function
+    indices = [[i,j] for i in 1:order+1 for j in 1:order+1]
+    index = indices[k]
+    ψ(i,x) = reduce(*,[x - p[j] for j in 1:order+1 if j != i])/reduce(*,[p[i] - p[j] for j in 1:order+1 if j != i])
+    return ψ(index[1],x)*ψ(index[2],y)
+end
+
+"""
+value(ip::QuadranguleGauss{Hexahedron,order}, j::Int, ξ::AbstactVector) where {order}
+Compute value of dubiner basis `j` at point ξ
+on the reference Hexahedron
+"""
+function value(ip::QuadranguleGauss{Hexahedron,order}, j::Int, ξ::Tensors.Vec{3,T}) where {order, T}
+    if j == 0
+        return zero(T)
+    else 
+        return quadrangule_gauss_3d(ξ[1],ξ[2],ξ[3],j,order)
+    end
+end
+
+function quadrangule_gauss_3d(x,y,z,l::Int, order::Int)
+    p,_ = FastGaussQuadrature.gausslobatto(order+1)
+    #scale to 0 - 1
+    p = (p .+ 1)./2
+    # Lagrange interpolation function
+    indices = [[i,j,k] for i in 1:order+1 for j in 1:order+1 for k in 1:order+1]
+    index = indices[l]
+    ψ(i,x) = reduce(*,[x - p[j] for j in 1:order+1 if j != i])/reduce(*,[p[i] - p[j] for j in 1:order+1 if j != i])
+    return ψ(index[1],x)*ψ(index[2],y)*ψ(index[3],z)
+end
+
 ####################
 # Lagrange
 ####################
@@ -271,6 +329,8 @@ function getdefaultdualbasis(shape::Type{s},order::Int) where {s<:Shape}
         return Legendre{shape,order}()
     elseif (getdim(shape()) == 2 || getdim(shape()) == 3) && shape <: Simplex
         return Dubiner{shape,order}()
+    elseif (getdim(shape()) == 2 || getdim(shape()) == 3) && shape <: HyperCube
+        return QuadranguleGauss{shape,order}()
     else
         throw("Not dual basis available for shape $shape")
     end

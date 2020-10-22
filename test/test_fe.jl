@@ -22,7 +22,6 @@ function ref_value(i::Int, ξ::Vec{2})
     i == 2 && return ξ_x
     i == 3 && return ξ_y
     i == 1 && return 1. - ξ_x - ξ_y
-    throw(ArgumentError("no shape function $i for interpolation $ip"))
 end
 
 ξ_ref = Vec{2}((0.5,0.5))
@@ -37,7 +36,6 @@ function ref_value1(i::Int, ξ::Vec{1})
     ξ_x = ξ[1]
     i == 1 && return 1-ξ_x
     i == 2 && return ξ_x
-    throw(ArgumentError("no shape function $i for interpolation $ip"))
 end
 ξ_ref = Vec{1}((0.5,))
 finiteElement = ContinuousLagrange(jF.Segment,1)
@@ -58,12 +56,29 @@ function ref_value3(i::Int, ξ::Vec{3})
     i == 2 && return ξ_x
     i == 3 && return ξ_y
     i == 4 && return ξ_z
-    throw(ArgumentError("no shape function $i for interpolation $ip"))
 end
 
 ξ_ref = Vec{3}((0.5,0.5,0.5))
 for j = 1:4
     @test abs(ref_value3(j,ξ_ref) - jF.value(finiteElement,j,ξ_ref)) < eps(Float64)
+end
+
+########################### 2D in Rectangles #################
+
+finiteElement = ContinuousLagrange(jF.Rectangle, 1)
+
+ξ_ref = Vec{2}((0.5,0.5))
+for j = 1:4
+    @test abs(0.25 - jF.value(finiteElement,j,ξ_ref)) < eps(Float64)
+end
+
+########################### 3D in Hexahedra #################
+
+finiteElement = ContinuousLagrange(jF.Hexahedron, 1)
+
+ξ_ref = Vec{3}((0.5,0.5,0.5))
+for j = 1:4
+    @test abs(0.125 - jF.value(finiteElement,j,ξ_ref)) < eps(Float64)
 end
 
 end

@@ -158,20 +158,20 @@ end
 get points for a nodal basis of order `order` on a `dim`
     dimensional hypercube
 """
-function get_nodal_points(::Type{Rectangle}, order)
-    points = Vector{Tensors.Vec{2,Float64}}()
-    vertices = reference_coordinates(Rectangle)
+function get_nodal_points(::Type{HyperCube{dim}}, order) where {dim}
+    points = Vector{Tensors.Vec{dim,Float64}}()
+    vertices = reference_coordinates(HyperCube{dim})
     topology = Dict{Int, Int}()
     append!(points, vertices)
     push!(topology, 0=>length(points))
-    [append!(points, _interior_points(verts, order)) for verts in reference_edges(Rectangle)]
+    [append!(points, _interior_points(verts, order)) for verts in reference_edges(HyperCube{dim})]
     push!(topology, 1=>length(points)-topology[0])
-    append!(points, _cube_interior_points(vertices, order))
+    append!(points, _cube_interior_points(vertices, order, dim))
     push!(topology, 2=>length(points)-topology[0]-topology[1])
     points, topology
 end
 
-function _cube_interior_points(verts, order)
+function _cube_interior_points(verts, order, dim)
     n = length(verts)
     ls = [(verts[i] - verts[1])/order for i in 2:n]
     lx = ls[1]
@@ -181,8 +181,14 @@ function _cube_interior_points(verts, order)
             lx = point
         end
     end
-        
-    [eltype(verts)((verts[1][1]+i*lx[1],verts[1][2]+j*lx[2])) for i in 1:order-1 for j in 1:order-1]
+    
+    if dim == 2
+        return [eltype(verts)((verts[1][1]+i*lx[1],verts[1][2]+j*lx[2])) for i in 1:order-1 for j in 1:order-1]
+    elseif dim == 3
+        return [eltype(verts)((verts[1][1]+i*lx[1],verts[1][2]+j*lx[2], verts[1][3]+k*lx[3])) for i in 1:order-1 for j in 1:order-1 for k in 1:order-1]
+    else
+        error("interior nodes for hypercube of dimension $dim not supported")
+    end
 end
 
 ############
