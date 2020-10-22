@@ -5,6 +5,8 @@ struct Vertex{dim,T}
     x::Tensors.Vec{dim, T}
 end
 
+Base.eltype(::Vertex{dim,T}) where {dim,T} = T
+
 @inline get_coordinates(vertex::Vertex) = vertex.x
 
 #--------------- Cells
@@ -13,6 +15,9 @@ struct Cell{dim, N, M, L}
 end
 
 #Common cell types
+const LineCell = Cell{1,2,1,1}
+@inline get_cell_name(::LineCell) = "Line"
+
 const TriangleCell = Cell{2,3,3,1}
 @inline get_cell_name(::TriangleCell) = "Triangle"
 @inline reference_edge_vertices(::TriangleCell) = ((2,3),(3,1),(1,2))
@@ -25,6 +30,12 @@ const RectangleCell = Cell{2,4,4,1}
 
 const HexagonCell = Cell{2,6,6,1}
 @inline get_cell_name(::HexagonCell) = "Hexagon"
+
+const TetrahedronCell = Cell{3,4,4,4}
+@inline get_cell_name(::TetrahedronCell) = "Tetrahedron"
+
+const HexahedronCell = Cell{3,8,12,6}
+@inline get_cell_name(::HexahedronCell) = "Hexahedron"
 
 # API
 @inline getnvertices(cell::Cell{dim,N}) where {dim,N} = N
@@ -62,6 +73,7 @@ gettopology(mesh::PolytopalMesh, cell::Cell) = gettopology(cell)
 getnvertices(mesh::PolytopalMesh, cell::Cell) = getnvertices(cell)
 getnedges(mesh::PolytopalMesh, cell::Cell) = getnedges(cell)
 getcell(mesh::PolytopalMesh, idx::Int) = mesh.cells[idx]
+getCellType(mesh::PolytopalMesh, idx::Int) = typeof(getcell(mesh,idx))
 
 function getcellsubentities(mesh::PolytopalMesh{2},cellidx::Int,element::Int)
   if element == 0

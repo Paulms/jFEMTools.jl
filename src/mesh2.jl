@@ -74,6 +74,9 @@ getedgeset(mesh::PolytopalMesh2, set::String) = getentityset(mesh,1,set)
 getfacetset(mesh::PolytopalMesh2{dim}, set::String) where {dim} = getentityset(mesh,dim-1,set)
 getcells(mesh::PolytopalMesh2{dim}) where {dim} = getentities(mesh,dim)
 getcell(mesh::PolytopalMesh2{dim}, idx::Int) where {dim} = (1<= idx <= getncells(mesh) ? MeshEntity{dim}(idx) : error("cell index out of bounds"))
+function getCellType(mesh::PolytopalMesh2{dim}, idx::Int) where {dim}
+  return Cell{dim, getncellsubentities(mesh,idx,0), getncellsubentities(mesh,idx,1), getncellsubentities(mesh,idx,2)}
+end
 getvertices(mesh::PolytopalMesh2) = getentities(mesh,0)
 getedges(mesh::PolytopalMesh2) = getentities(mesh,1)
 getfacets(mesh::PolytopalMesh2{dim}) where {dim} = getentities(mesh,dim-1)
@@ -187,7 +190,7 @@ function _intersection(mesh,d1,d2,d3)
   _pack_connectivity(indices)
 end
 
-function _local_edgesD(mesh,cell)
+function _local_edgesD(mesh::PolytopalMesh2{2},cell)
   indices = getverticesidx(mesh,cell)
   N = size(indices,1)
   idx = Tuple((i,mod1(i+1,N)) for i in 1:N)
@@ -216,6 +219,7 @@ function _build!(mesh::PolytopalMesh2{D},d) where {D}
         end
       end
     end
+  #TODO if d == 2
   else
     error("Automatic construction of entities of dim $d failed")
   end

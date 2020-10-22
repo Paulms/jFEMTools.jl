@@ -27,6 +27,7 @@ struct GrundmannMoeller <: AbstractQuadratureRule end
 struct Strang <: AbstractQuadratureRule end
 struct DefaultQuad <: AbstractQuadratureRule end
 struct GaussLegendre <: AbstractQuadratureRule end
+struct Gauss <: AbstractQuadratureRule end
 
 function (::Type{QuadratureRule{Triangle}})(quad_type::DefaultQuad, order::Int)
     if order <= 6
@@ -37,6 +38,21 @@ function (::Type{QuadratureRule{Triangle}})(quad_type::DefaultQuad, order::Int)
     else
         throw(ArgumentError("Quadrature rule of order $order not available"))
     end
+end
+
+function (::Type{QuadratureRule{Tetrahedron}})(quad_type::DefaultQuad, order::Int)
+    if order <= 4
+        return QuadratureRule{Tetrahedron}(Gauss(),order)
+    elseif order > 6 && isodd(order)
+        s = Int((order-1)/2)
+        return QuadratureRule{Tetrahedron}(GrundmannMoeller(),s)
+    else
+        throw(ArgumentError("Quadrature rule of order $order not available"))
+    end
+end
+
+function (::Type{QuadratureRule{Hexahedron}})(quad_type::DefaultQuad, order::Int)
+    return QuadratureRule{Hexahedron}(GaussLegendre(),order)
 end
 
 # Get GaussLegendre weigths and points from FastGaussQuadrature
