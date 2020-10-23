@@ -319,7 +319,7 @@ function _build_hexahedron_geometry!(geometry,indices, offsets, nel, nedges,nfac
     for cell in 1:nel
         nodes = indices[offsets[cell]:offsets[cell+1]-1]
         # Compute faces geometries
-        Vi = [nodes[1:3],nodes[2:4],nodes[[1,3,4]],nodes[[1,2,3]]]
+        Vi = [nodes[1:3],nodes[2:4],nodes[[1,3,4]],nodes[[1,2,4]]]
         for vi in Vi
             token = Base.ht_keyindex2!(facesDict, Set(vi))
             if token > 0 # reuse edge index
@@ -334,8 +334,7 @@ function _build_hexahedron_geometry!(geometry,indices, offsets, nel, nedges,nfac
         end
         # Compute edges geometries
         N = size(nodes,1)
-        idx = Tuple((i,mod1(i+1,N)) for i in 1:N)
-        Vi = [[nodes[x[1]],nodes[x[2]]] for x in idx]
+        Vi = [[1,2],[2,3],[3,4],[4,1],[1,3],[2,4]]
         for vi in Vi
             token = Base.ht_keyindex2!(edgesDict, Set(vi))
             if token > 0 # reuse edge index
@@ -384,6 +383,10 @@ function hyper_rectagle_mesh2(::Type{HexahedronCell}, nel::NTuple{3,Int}, left::
     for k in 1:nel_z, j in 1:nel_y, i in 1:nel_x
         l = l + 8
         push!(offsets, l)
+        # cube = (1, 2, 3, 4, 5, 6, 7, 8)
+        # left = (1, 4, 5, 8), right = (2, 3, 6, 7)
+        # front = (1, 2, 5, 6), back = (3, 4, 7, 8)
+        # bottom = (1, 2, 3, 4), top = (5, 6, 7, 8)
         push!(indices, (node_array[i,j,k], node_array[i+1,j,k], node_array[i+1,j+1,k], node_array[i,j+1,k],
                                 node_array[i,j,k+1], node_array[i+1,j,k+1], node_array[i+1,j+1,k+1], node_array[i,j+1,k+1])...)
     end
@@ -418,8 +421,11 @@ function hyper_rectagle_mesh2(::Type{HexahedronCell}, nel::NTuple{3,Int}, left::
     return PolytopalMesh2(entities,nodes,geometry,Dict(2=>facesets))
 end
 
+#########################33
 # Tetrahedron
-function hyper_rectagle_mesh2(::Type{TetrahedronCell}, nel::NTuple{3,Int}, left::Vec{3,T}=Vec{3}((-1.0,-1.0,-1.0)), right::Vec{3,T}=Vec{3}((1.0,1.0,1.0))) where {T}
+##########################33
+
+function hyper_rectagle_mesh2(::Type{TetrahedronCell}, nel::NTuple{3,Int}, left::Vec{3,T}=Vec{3}((0.0,0.0,0.0)), right::Vec{3,T}=Vec{3}((1.0,1.0,1.0))) where {T}
     nodes_per_dim = nel .+ 1
 
     cells_per_cube = 6

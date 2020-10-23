@@ -31,8 +31,9 @@ const RectangleCell = Cell{2,4,4,1}
 const HexagonCell = Cell{2,6,6,1}
 @inline get_cell_name(::HexagonCell) = "Hexagon"
 
-const TetrahedronCell = Cell{3,4,4,4}
+const TetrahedronCell = Cell{3,4,6,4}
 @inline get_cell_name(::TetrahedronCell) = "Tetrahedron"
+reference_facet_vertices(::Type{TetrahedronCell}) = reference_face_nodes(Tetrahedron)
 
 const HexahedronCell = Cell{3,8,12,6}
 @inline get_cell_name(::HexahedronCell) = "Hexahedron"

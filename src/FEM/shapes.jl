@@ -45,7 +45,13 @@ function reference_edges(::Type{Tetrahedron})
     coords = reference_coordinates(Tetrahedron)
     [[coords[i[1]], coords[i[2]]] for i in reference_edge_nodes(Tetrahedron)]
 end
-reference_edge_nodes(::Type{Tetrahedron}) = ((1,2),(2,3),(3,4),(4,1))
+function reference_faces(::Type{Tetrahedron})
+    coords = reference_coordinates(Tetrahedron)
+    [[coords[i[1]], coords[i[2]], coords[i[3]]] for i in reference_face_nodes(Tetrahedron)]
+end
+reference_edge_nodes(::Type{Tetrahedron}) = ((1,2),(2,3),(3,4),(4,1),(1,3),(2,4))
+reference_face_nodes(::Type{Tetrahedron}) = ((1,2,3),(2,3,4),(1,3,4),(1,2,4))
+
 
 function gettopology(::Type{Tetrahedron})
     return Dict(0=>4,1=>6,2=>4,3=>1)
@@ -67,7 +73,7 @@ function get_nodal_points(::Type{Simplex{dim}}, order) where {dim}
         append!(points, _interior_points(vertices, order))
         push!(topology, 2=>length(points)-topology[0]-topology[1])
     else
-        [append!(points, _interior_points(verts, order)) for verts in reference_faces(HyperCube{dim})]
+        [append!(points, _interior_points(verts, order)) for verts in reference_faces(Simplex{dim})]
         push!(topology, 2=>length(points)-topology[0]-topology[1])
         append!(points, _interior_points(vertices, order))
         push!(topology, 3=>length(points)-topology[0]-topology[1]-topology[2])
@@ -84,6 +90,8 @@ function _interior_points(verts, order)
         grid_indices = [[i] for i in 1:order-1]
     elseif m == 2 && order > 2
         grid_indices = [[i,j] for i in 1:order-1 for j in 1:order-i-1]
+    elseif m == 3 && order > 3
+        grid_indices = [[i,j,k] for i in 1:order-3 for j in 1:order-i-2 for k in 1:order-1-j-i]
     end
     pts = Vector{typeof(verts[1])}()
     for indices in grid_indices
