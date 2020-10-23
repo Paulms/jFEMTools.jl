@@ -51,8 +51,8 @@ function (::Type{QuadratureRule{Tetrahedron}})(quad_type::DefaultQuad, order::In
     end
 end
 
-function (::Type{QuadratureRule{Hexahedron}})(quad_type::DefaultQuad, order::Int)
-    return QuadratureRule{Hexahedron}(GaussLegendre(),order)
+function (::Type{QuadratureRule{HyperCube{dim}}})(quad_type::DefaultQuad, order::Int) where {dim}
+    return QuadratureRule{HyperCube{dim}}(GaussLegendre(),order)
 end
 
 # Get GaussLegendre weigths and points from FastGaussQuadrature

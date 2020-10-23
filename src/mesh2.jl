@@ -95,6 +95,7 @@ function getsubentitiesindexes(mesh::PolytopalMesh2,entity::MeshEntity{d1},d2::I
 end
 
 function getncellsubentities(mesh::PolytopalMesh2{dim},cellidx,entity::Int) where {dim}
+  entity == dim && return 1
   connectivity = get_connectivity!(mesh,dim,entity)
   return connectivity.offsets[cellidx+1] - connectivity.offsets[cellidx]
 end
