@@ -136,7 +136,7 @@ outfiles = WriteVTK.vtk_save(vtk_file)
 
 We solve a Poisson PDE using Virtual Element Method:
 
-```
+```julia
 using jFEMTools
 import Tensors
 const jF = jFEMTools
