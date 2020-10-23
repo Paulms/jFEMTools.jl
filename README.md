@@ -13,9 +13,11 @@ VEM implementation based on:
 - The Hitchhiker's Guide to the Virtual Element Method
 L. Beirão da Veiga, F. Brezzi, L. D. Marini, and A. Russo, Mathematical Models and Methods in Applied Sciences 2014 24:08, 1541-1573
 
-FEM implementation based on:
+FEM implementation based on
 
 - JuaFEM: https://github.com/KristofferC/JuAFEM.jl.git
+
+- Logg, Mardal, Wells, Kirby, FIAT: numerical construction of finite element basis functions.
 
 # FEM
 - Continuous Lagrange finite elements of arbitrary order:
