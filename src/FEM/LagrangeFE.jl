@@ -63,8 +63,13 @@ end
 
 @inline getnbasefunctions(::ContinuousLagrange{1,Segment,order}) where {order} = order + 1
 @inline getnbasefunctions(::ContinuousLagrange{2,Triangle,order}) where {order} = Int((order+1)*(order+2)/2)
+@inline getnbasefunctions(::ContinuousLagrange{3,Tetrahedron,order}) where {order} = Int((order+1)*(order+2)*(order+3)/6)
+@inline getnbasefunctions(::ContinuousLagrange{dim,HyperCube{dim},order}) where {dim,order} = (order+1)^dim
+
 @inline getngeombasefunctions(::ContinuousLagrange{1,Segment,order,gorder}) where {order,gorder} = gorder + 1
 @inline getngeombasefunctions(::ContinuousLagrange{2,Triangle,order,gorder}) where {order,gorder} = Int((gorder+1)*(gorder+2)/2)
+@inline getngeombasefunctions(::ContinuousLagrange{3,Tetrahedron,order,gorder}) where {order,gorder} = Int((gorder+1)*(gorder+2)*(gorder+3)/6)
+@inline getngeombasefunctions(::ContinuousLagrange{dim,HyperCube{dim},order,gorder}) where {dim,order,gorder} = (gorder+1)^dim
 @inline gettopology(ip::ContinuousLagrange) = ip.topology
 gettopology(mesh::AbstractPolytopalMesh,cell, ip::ContinuousLagrange) = ip.topology
 @inline getgeomtopology(ip::ContinuousLagrange) = ip.geom_topology

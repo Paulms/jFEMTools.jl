@@ -1,10 +1,12 @@
 using jFEMTools
-using Tensors
+import Tensors: Vec,  ⋅
 using SparseArrays
+import WriteVTK
 const jF = jFEMTools
 
-# We solve a simple Poisson PDE with homogeneous Dirichlet boundary conditions
-# using ContinuousLagrange finite elements
+
+# We solve a simple 3D Poisson PDE with homogeneous Dirichlet boundary conditions
+# using ContinuousLagrange finite elements on a Hexahedral mesh
 
 # Problem: 
 
@@ -14,11 +16,11 @@ const jF = jFEMTools
 # We start  generating a simple grid with 20x20 triangular elements
 # using `unitSquareMesh2`. The generator defaults to the unit square,
 # so we don't need to specify the corners of the domain.
-mesh = unitSquareMesh2(TriangleCell, (3,3));
+mesh = hyper_rectagle_mesh2(HexahedronCell,(10,10,10))
 
 # ### Initiate function Spaces
-dim = 2
-P1 = ContinuousLagrange(:Triangle,1)
+dim = jF.getdim(mesh)
+P1 = ContinuousLagrange(:Hexahedron,1)
 Wh = FEMFunctionSpace(mesh, P1, 1)
 
 # Declare variables
@@ -34,13 +36,13 @@ dh = DofHandler(mesh,[u_h])
 # Now that we have distributed all our dofs we can create our tangent matrix,
 # using `create_sparsity_pattern`. This function returns a sparse matrix
 # with the correct elements stored.
-K = jF.create_sparsity_pattern(dh)
+K = jF.create_sparsity_pattern(dh);
 
 # ### Boundary conditions
 dbc = Dirichlet(dh, u_h, "boundary", 0.0)
 
 # ### RHS function
-f(x::Vec{dim}) where {dim} = 2*π^2*sin(π*x[1])*sin(π*x[2])
+f(x::Vec{dim}) where {dim} = 2*π^2*sin(π*x[1])*sin(π*x[2])*sin(π*x[3])
 
 # ### Assembling the linear system
 # Now we have all the pieces needed to assemble the linear system, $K u = f$.
@@ -105,13 +107,8 @@ K, b = doassemble(Wh, K, dh);
 apply!(K,b,dbc);
 u = K \ b;
 
-#Plot solution
-using Makie
-#import AbstractPlotting
-include("src/plot_recipes.jl")
-#popdisplay(AbstractPlotting.PlotDisplay())
-#AbstractPlotting.inline!(true)
-scene = Scene(resolution = (400, 200))
 # Plot approximation
-vi = jFEMTools.vertexdofs(dh, u_h)
-plot!(scene, mesh, color = u[vi])
+vi = jFEMTools.vertexdofs(dh, u_h);
+vtk_file = vtk_grid("poisson3D", mesh)
+vtk_file["u", WriteVTK.VTKPointData()] = u[vi]
+outfiles = WriteVTK.vtk_save(vtk_file)

@@ -71,9 +71,9 @@ function _distribute_dofs(dh::DofHandler{dim,T}) where {dim,T}
     # added to the face; if we encounter the same face again we *always* reverse the order
     # In 2D a face (i.e. a line) is uniquely determined by 2 vertices, and in 3D a
     # face (i.e. a surface) is uniquely determined by 3 vertices.
-    #facedicts = [Dict{FaceIndex,Int}() for _ in 1:nvariables(dh)]
+    facedicts = [Dict{entityeltype(dh.mesh,2),Int}() for _ in 1:nvariables(dh)]
 
-    topologyDicts = Dict(0=>vertexdicts, 1=>edgedicts)  #TODO: only valid in 2D
+    topologyDicts = dim == 2 ? Dict(0=>vertexdicts, 1=>edgedicts) : Dict(0=>vertexdicts, 1=>edgedicts, 2 => facedicts)
 
     nextdof = 1 # next free dof to distribute
     push!(dh.cell_dofs_offset, 1) # dofs for the first cell start at 1

@@ -36,6 +36,7 @@ const TetrahedronCell = Cell{3,4,4,4}
 
 const HexahedronCell = Cell{3,8,12,6}
 @inline get_cell_name(::HexahedronCell) = "Hexahedron"
+reference_facet_vertices(::Type{HexahedronCell}) = reference_face_nodes(Hexahedron)
 
 # API
 @inline getnvertices(cell::Cell{dim,N}) where {dim,N} = N

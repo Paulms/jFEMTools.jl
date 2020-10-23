@@ -38,6 +38,56 @@ function Dirichlet(dh::DofHandler{2}, u::TrialFunction, edgeset::String,f::Union
     return Dirichlet(prescribed_dofs[p], values[p])
 end
 
+function Dirichlet(dh::DofHandler{dim}, u::TrialFunction, facetset::String,f::Union{Function,Real}) where {dim}
+    element = getelement(getfunctionspace(u))
+    facetset = getfacetset(dh.mesh, facetset)
+    prescribed_dofs = Vector{Int}()
+    values = Vector{Float64}()
+    for facet_idx in facetset
+        cell_idx = facet_idx[1]  #cell idx
+        cell = getcells(dh.mesh)[cell_idx]
+        cell_topology = gettopology(dh.mesh,cell, element)
+        facet_lidx = facet_idx[2]  # facet idx
+        l_dof = Int[]
+        offset::Int = dh.cell_dofs_offset[cell_idx] - 1 + field_offset(dh, u, cell_idx)
+        for j = 1:getnfacetvertices(dh.mesh, cell_idx, facet_lidx) #Add vertex dofs
+            local_offset = reference_facet_vertices(dh.mesh,cell)[facet_lidx][j]
+            if !(dh.cell_dofs[offset+local_offset] ∈ prescribed_dofs)
+                push!(prescribed_dofs, dh.cell_dofs[offset+local_offset])
+                push!(l_dof, local_offset)
+            end
+        end
+        if dim > 1
+            dofs_per_edge = Int(cell_topology[1]/getnedges(dh.mesh,cell))
+            nedges = dim == 2 ? 1 : getnedges(dh.mesh, cell) 
+            for k in 1:nedges
+                edge_lidx = dim == 2 ? facet_lidx : k
+                for j in 1:dofs_per_edge  #Add edge dofs
+                    local_offset::Int = cell_topology[0] + dofs_per_edge*(edge_lidx-1) + j
+                    if !(dh.cell_dofs[offset+local_offset] ∈ prescribed_dofs)
+                        push!(prescribed_dofs, dh.cell_dofs[offset+local_offset])
+                        push!(l_dof, local_offset)
+                    end
+                end
+            end
+        end
+        if dim > 2
+            dofs_per_face = Int(cell_topology[2]/getnfaces(dh.mesh,cell))
+            for j in 1:dofs_per_face  #Add face dofs
+                local_offset::Int = cell_topology[0] + cell_topology[1] + dofs_per_face*(facet_lidx-1) + j
+                if !(dh.cell_dofs[offset+local_offset] ∈ prescribed_dofs)
+                    push!(prescribed_dofs, dh.cell_dofs[offset+local_offset])
+                    push!(l_dof, local_offset)
+                end
+            end
+        end
+        _push_values!(values, cell_idx, dh.mesh, l_dof, element, f)
+    end
+    #now put all in order
+    p = sortperm(prescribed_dofs)
+    return Dirichlet(prescribed_dofs[p], values[p])
+end
+
 function _push_values!(values::Vector, cell::Int, mesh,l_dof::Vector{Int}, felem::AbstractGalerkinElement, f::Function)
     for i in l_dof
         vals = f(spatial_nodal_coordinate(mesh,cell,felem,i))

@@ -268,7 +268,7 @@ function _build_hexahedron_geometry!(geometry,indices, offsets, nel, nedges,nfac
     for cell in 1:nel
         nodes = indices[offsets[cell]:offsets[cell+1]-1]
         # Compute faces geometries
-        Vi = [nodes[1:4],nodes[5:8],nodes[[2,3,6,7]],nodes[[3,4,7,8]],nodes[[1,4,5,8]],nodes[[1,2,5,6]]]
+        Vi = [nodes[1:4],nodes[5:8],nodes[[2,3,6,7]],nodes[[1,5,8,4]],nodes[[3,4,8,7]],nodes[[1,2,6,5]]]
         for vi in Vi
             token = Base.ht_keyindex2!(facesDict, Set(vi))
             if token > 0 # reuse edge index
@@ -282,8 +282,8 @@ function _build_hexahedron_geometry!(geometry,indices, offsets, nel, nedges,nfac
             end
         end
         # Compute edges geometries
-        Vi = [nodes[1:2],nodes[2:3],nodes[3:4],nodes[[1,4]],nodes[5:6],nodes[6:7],
-              nodes[7:8],nodes[[5,8]],nodes[[2,6]],nodes[[3,7]],nodes[[4,8]],nodes[[1,5]]]
+        Vi = [nodes[1:2],nodes[2:3],nodes[3:4],nodes[[4,1]],nodes[5:6],nodes[6:7],
+              nodes[7:8],nodes[[8,5]],nodes[[1,4]],nodes[[2,3]],nodes[[6,7]],nodes[[5,8]]]
         for vi in Vi
             token = Base.ht_keyindex2!(edgesDict, Set(vi))
             if token > 0 # reuse edge index
@@ -362,7 +362,7 @@ function _build_hexahedron_geometry!(geometry,indices, offsets, nel, nedges,nfac
 #####################################
 # Hexahedron 3D
 #####################################
-function hyper_rectagle_mesh2(::Type{HexahedronCell}, nel::NTuple{3,Int}, left::Vec{3,T}=Vec{3}((-1.0,-1.0,-1.0)), right::Vec{3,T}=Vec{3}((1.0,1.0,1.0))) where {T}
+function hyper_rectagle_mesh2(::Type{HexahedronCell}, nel::NTuple{3,Int}, left::Vec{3,T}=Vec{3}((0.0,0.0,0.0)), right::Vec{3,T}=Vec{3}((1.0,1.0,1.0))) where {T}
     nel_x = nel[1]; nel_y = nel[2]; nel_z = nel[3]; nel_tot = nel_x*nel_y*nel_z
     n_nodes_x = nel_x + 1; n_nodes_y = nel_y + 1; n_nodes_z = nel_z + 1
     n_nodes = n_nodes_x * n_nodes_y * n_nodes_z
@@ -385,7 +385,7 @@ function hyper_rectagle_mesh2(::Type{HexahedronCell}, nel::NTuple{3,Int}, left::
         l = l + 8
         push!(offsets, l)
         push!(indices, (node_array[i,j,k], node_array[i+1,j,k], node_array[i+1,j+1,k], node_array[i,j+1,k],
-                                 node_array[i,j,k+1], node_array[i+1,j,k+1], node_array[i+1,j+1,k+1], node_array[i,j+1,k+1])...)
+                                node_array[i,j,k+1], node_array[i+1,j,k+1], node_array[i+1,j+1,k+1], node_array[i,j+1,k+1])...)
     end
 
     n_edges = (nel_x+nel_y+2*nel_x*nel_y)*(nel_z+1) + (nel_y+1)*nel_z*(nel_x+1)
@@ -404,18 +404,18 @@ function hyper_rectagle_mesh2(::Type{HexahedronCell}, nel::NTuple{3,Int}, left::
                               [(cl, 5) for cl in cell_array[1,:,:][:]];
                               [(cl, 6) for cl in cell_array[:,:,end][:]]]
 
-    # Cell edge sets
+    # Cell face sets
     offset = 0
-    edgesets = Dict{String,Set{Tuple{Int,Int}}}()
-    edgesets["bottom"] = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[:,:,1][:]))   .+ offset]); offset += length(cell_array[:,:,1][:])
-    edgesets["front"]  = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[:,1,:][:]))   .+ offset]); offset += length(cell_array[:,1,:][:])
-    edgesets["right"]  = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[end,:,:][:])) .+ offset]); offset += length(cell_array[end,:,:][:])
-    edgesets["back"]   = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[:,end,:][:])) .+ offset]); offset += length(cell_array[:,end,:][:])
-    edgesets["left"]   = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[1,:,:][:]))   .+ offset]); offset += length(cell_array[1,:,:][:])
-    edgesets["top"]    = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[:,:,end][:])) .+ offset]); offset += length(cell_array[:,:,end][:])
-    edgesets["boundary"] = union(edgesets["bottom"],edgesets["right"],edgesets["top"],edgesets["left"],edgesets["back"],edgesets["front"])
+    facesets = Dict{String,Set{Tuple{Int,Int}}}()
+    facesets["bottom"] = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[:,:,1][:]))   .+ offset]); offset += length(cell_array[:,:,1][:])
+    facesets["front"]  = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[:,1,:][:]))   .+ offset]); offset += length(cell_array[:,1,:][:])
+    facesets["right"]  = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[end,:,:][:])) .+ offset]); offset += length(cell_array[end,:,:][:])
+    facesets["back"]   = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[:,end,:][:])) .+ offset]); offset += length(cell_array[:,end,:][:])
+    facesets["left"]   = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[1,:,:][:]))   .+ offset]); offset += length(cell_array[1,:,:][:])
+    facesets["top"]    = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[:,:,end][:])) .+ offset]); offset += length(cell_array[:,:,end][:])
+    facesets["boundary"] = union(facesets["bottom"],facesets["right"],facesets["top"],facesets["left"],facesets["back"],facesets["front"])
 
-    return PolytopalMesh2(entities,nodes,geometry,Dict(1=>edgesets))
+    return PolytopalMesh2(entities,nodes,geometry,Dict(2=>facesets))
 end
 
 # Tetrahedron
@@ -494,7 +494,7 @@ function hyper_rectagle_mesh2(::Type{TetrahedronCell}, nel::NTuple{3,Int}, left:
     @views bo = [map(x -> (x,1), c_nxyz[1, :, :, 1][:])   ; map(x -> (x,1), c_nxyz[3, :, :, 1][:])]
     @views to = [map(x -> (x,3), c_nxyz[5, :, :, end][:]) ; map(x -> (x,3), c_nxyz[6, :, :, end][:])]
 
-    edgesets = Dict(
+    facesets = Dict(
         "left" => Set(le),
         "right" => Set(ri),
         "front" => Set(fr),
@@ -504,6 +504,6 @@ function hyper_rectagle_mesh2(::Type{TetrahedronCell}, nel::NTuple{3,Int}, left:
         "boundary" => Set(union(le,ri,fr,ba,bo,to))
     )
 
-    return PolytopalMesh2(entities,nodes,geometry,Dict(1=>edgesets))
+    return PolytopalMesh2(entities,nodes,geometry,Dict(2=>facesets))
 
 end

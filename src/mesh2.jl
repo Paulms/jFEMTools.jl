@@ -22,6 +22,8 @@ end
 
 #Generic Interface
 getfacet(mesh::PolytopalMesh2{dim}, facet) where {dim} = getcellsubentities(mesh,facet.cellidx,dim-1)[facet.idx]
+getnfacetvertices(mesh::PolytopalMesh2{dim}, cell_idx, facet_lidx) where {dim} = getnvertices(mesh,getcellsubentities(mesh,cell_idx,dim-1)[facet_lidx])
+reference_facet_vertices(mesh::PolytopalMesh2{dim},cell::MeshEntity{dim})  where {dim} = reference_facet_vertices(getCellType(mesh,cell.index))
 
 "Return coordinates keeping orientation"
 function getverticescoords(mesh::PolytopalMesh2{d}, edge::EdgeIndex) where {d}
@@ -52,6 +54,7 @@ function gettopology(mesh::PolytopalMesh2{dim}, cell::MeshEntity{dim}) where {di
 end
 
 getnedges(mesh::PolytopalMesh2{dim}, cell::MeshEntity{dim}) where {dim} = getncellsubentities(mesh,cell.index,1)
+getnfaces(mesh::PolytopalMesh2{dim}, cell::MeshEntity{dim}) where {dim} = getncellsubentities(mesh,cell.index,2)
 
 function reference_edge_vertices(mesh::PolytopalMesh2{dim}, cell::MeshEntity{dim}) where {dim}
   N = getnvertices(mesh,cell)
