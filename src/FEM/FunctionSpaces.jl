@@ -28,7 +28,11 @@ function Base.show(io::IO, fs::FEMFunctionSpace)
     println(io, "Domain mesh: \n", fs.mesh)
     println(io, "Number of local dofs: ", getnlocaldofs(fs))
   end
-
+"""
+function FEMFunctionSpace(mesh::AbstractPolytopalMesh, felem::FiniteElement{dim,shape,order,gorder}, components::Int;
+    quad_degree::Int = order+1) where {dim, shape, order,gorder}
+    Build FEM finite element of type `felem` FunctionSpace with `components` and domain `mesh`
+"""
 function FEMFunctionSpace(mesh::AbstractPolytopalMesh, felem::FiniteElement{dim,shape,order,gorder}, components::Int;
     quad_degree::Int = order+1) where {dim, shape, order,gorder}
     quad_rule = QuadratureRule{shape}(DefaultQuad(), quad_degree)

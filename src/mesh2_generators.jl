@@ -252,3 +252,264 @@ function rectangle_mesh2(::Type{HexagonCell}, nel::NTuple{2,Int}, LL::Tensors.Ve
 
   return PolytopalMesh2(entities,vertices,geometry,Dict(1=>edgesets))
 end
+
+##########################
+# 3D Data
+##########################
+function _build_hexahedron_geometry!(geometry,indices, offsets, nel, nedges,nfaces)
+    indices1 = [Int[] for _ in 1:nel]
+    indices2 = [Int[] for _ in 1:nfaces]
+    indices3 = [Int[] for _ in 1:nel]
+    indices4 = [Int[] for _ in 1:nedges]
+    facesDict = Dict{Set{Int},Int}()
+    edgesDict = Dict{Set{Int},Int}()
+    nextidx = 1 #first face index
+    next_e_idx = 1 #first face index
+    for cell in 1:nel
+        nodes = indices[offsets[cell]:offsets[cell+1]-1]
+        # Compute faces geometries
+        Vi = [nodes[1:4],nodes[5:8],nodes[[2,3,6,7]],nodes[[1,5,8,4]],nodes[[3,4,8,7]],nodes[[1,2,6,5]]]
+        for vi in Vi
+            token = Base.ht_keyindex2!(facesDict, Set(vi))
+            if token > 0 # reuse edge index
+            reuse_idx = facesDict.vals[token]
+            push!(indices1[cell], reuse_idx)
+            else
+            push!(indices1[cell], nextidx)
+            indices2[nextidx] = vi
+            Base._setindex!(facesDict, nextidx, Set(vi), -token)
+            nextidx += 1
+            end
+        end
+        # Compute edges geometries
+        Vi = [nodes[1:2],nodes[2:3],nodes[3:4],nodes[[4,1]],nodes[5:6],nodes[6:7],
+              nodes[7:8],nodes[[8,5]],nodes[[1,4]],nodes[[2,3]],nodes[[6,7]],nodes[[5,8]]]
+        for vi in Vi
+            token = Base.ht_keyindex2!(edgesDict, Set(vi))
+            if token > 0 # reuse edge index
+            reuse_idx = edgesDict.vals[token]
+            push!(indices3[cell], reuse_idx) 
+            else
+            push!(indices3[cell], next_e_idx)
+            indices4[next_e_idx] = vi
+            Base._setindex!(edgesDict, next_e_idx, Set(vi), -token)
+            next_e_idx += 1
+            end
+        end
+    end
+    V = _pack_connectivity(indices1)
+    push!(geometry,(3,2)=>V)
+    V = _pack_connectivity(indices2)
+    push!(geometry,(2,0)=>V)
+    V = _pack_connectivity(indices3)
+    push!(geometry,(3,1)=>V)
+    V = _pack_connectivity(indices4)
+    push!(geometry,(1,0)=>V)
+  end
+
+  function _build_tetrahedron_geometry!(geometry,indices, offsets, nel, nedges,nfaces)
+    indices1 = [Int[] for _ in 1:nel]
+    indices2 = [Int[] for _ in 1:nfaces]
+    indices3 = [Int[] for _ in 1:nel]
+    indices4 = [Int[] for _ in 1:nedges]
+    facesDict = Dict{Set{Int},Int}()
+    edgesDict = Dict{Set{Int},Int}()
+    nextidx = 1 #first face index
+    next_e_idx = 1 #first face index
+    for cell in 1:nel
+        nodes = indices[offsets[cell]:offsets[cell+1]-1]
+        # Compute faces geometries
+        Vi = [nodes[1:3],nodes[2:4],nodes[[1,3,4]],nodes[[1,2,4]]]
+        for vi in Vi
+            token = Base.ht_keyindex2!(facesDict, Set(vi))
+            if token > 0 # reuse edge index
+            reuse_idx = facesDict.vals[token]
+            push!(indices1[cell], reuse_idx)
+            else
+            push!(indices1[cell], nextidx)
+            indices2[nextidx] = vi
+            Base._setindex!(facesDict, nextidx, Set(vi), -token)
+            nextidx += 1
+            end
+        end
+        # Compute edges geometries
+        N = size(nodes,1)
+        Vi = [[1,2],[2,3],[3,4],[4,1],[1,3],[2,4]]
+        for vi in Vi
+            token = Base.ht_keyindex2!(edgesDict, Set(vi))
+            if token > 0 # reuse edge index
+            reuse_idx = edgesDict.vals[token]
+            push!(indices3[cell], reuse_idx) 
+            else
+            push!(indices3[cell], next_e_idx)
+            indices4[next_e_idx] = vi
+            Base._setindex!(edgesDict, next_e_idx, Set(vi), -token)
+            next_e_idx += 1
+            end
+        end
+    end
+    V = _pack_connectivity(indices1)
+    push!(geometry,(3,2)=>V)
+    V = _pack_connectivity(indices2)
+    push!(geometry,(2,0)=>V)
+    V = _pack_connectivity(indices3)
+    push!(geometry,(3,1)=>V)
+    V = _pack_connectivity(indices4)
+    push!(geometry,(1,0)=>V)
+  end
+
+#####################################
+# Hexahedron 3D
+#####################################
+function hyper_rectagle_mesh2(::Type{HexahedronCell}, nel::NTuple{3,Int}, left::Vec{3,T}=Vec{3}((0.0,0.0,0.0)), right::Vec{3,T}=Vec{3}((1.0,1.0,1.0))) where {T}
+    nel_x = nel[1]; nel_y = nel[2]; nel_z = nel[3]; nel_tot = nel_x*nel_y*nel_z
+    n_nodes_x = nel_x + 1; n_nodes_y = nel_y + 1; n_nodes_z = nel_z + 1
+    n_nodes = n_nodes_x * n_nodes_y * n_nodes_z
+
+    # Generate vertices
+    coords_x = range(left[1], stop=right[1], length=n_nodes_x)
+    coords_y = range(left[2], stop=right[2], length=n_nodes_y)
+    coords_z = range(left[3], stop=right[3], length=n_nodes_z)
+    nodes = Tensors.Vec{3,T}[]
+    for k in 1:n_nodes_z, j in 1:n_nodes_y, i in 1:n_nodes_x
+        push!(nodes, Tensors.Vec{3}((coords_x[i], coords_y[j], coords_z[k])))
+    end
+
+    # Generate cells
+    node_array = reshape(collect(1:n_nodes), (n_nodes_x, n_nodes_y, n_nodes_z))
+    offsets = [1]
+    l = 1
+    indices = Int[]
+    for k in 1:nel_z, j in 1:nel_y, i in 1:nel_x
+        l = l + 8
+        push!(offsets, l)
+        # cube = (1, 2, 3, 4, 5, 6, 7, 8)
+        # left = (1, 4, 5, 8), right = (2, 3, 6, 7)
+        # front = (1, 2, 5, 6), back = (3, 4, 7, 8)
+        # bottom = (1, 2, 3, 4), top = (5, 6, 7, 8)
+        push!(indices, (node_array[i,j,k], node_array[i+1,j,k], node_array[i+1,j+1,k], node_array[i,j+1,k],
+                                node_array[i,j,k+1], node_array[i+1,j,k+1], node_array[i+1,j+1,k+1], node_array[i,j+1,k+1])...)
+    end
+
+    n_edges = (nel_x+nel_y+2*nel_x*nel_y)*(nel_z+1) + (nel_y+1)*nel_z*(nel_x+1)
+    n_faces = nel_x*nel_y*(nel_z+1)+nel_y*nel_z*(nel_x+1)+nel_x*nel_z*(nel_y+1)
+    entities = (n_nodes, n_edges, n_faces,nel_tot)
+
+    geometry = Dict((3,0) => MeshConectivity(Tuple(indices), Tuple(offsets)))
+    _build_hexahedron_geometry!(geometry, indices, offsets,nel_tot, n_edges, n_faces)
+
+    # Cell faces
+    cell_array = reshape(collect(1:nel_tot),(nel_x, nel_y, nel_z))
+    boundary = Tuple{Int,Int}[[(cl, 1) for cl in cell_array[:,:,1][:]];
+                              [(cl, 2) for cl in cell_array[:,1,:][:]];
+                              [(cl, 3) for cl in cell_array[end,:,:][:]];
+                              [(cl, 4) for cl in cell_array[:,end,:][:]];
+                              [(cl, 5) for cl in cell_array[1,:,:][:]];
+                              [(cl, 6) for cl in cell_array[:,:,end][:]]]
+
+    # Cell face sets
+    offset = 0
+    facesets = Dict{String,Set{Tuple{Int,Int}}}()
+    facesets["bottom"] = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[:,:,1][:]))   .+ offset]); offset += length(cell_array[:,:,1][:])
+    facesets["front"]  = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[:,1,:][:]))   .+ offset]); offset += length(cell_array[:,1,:][:])
+    facesets["right"]  = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[end,:,:][:])) .+ offset]); offset += length(cell_array[end,:,:][:])
+    facesets["back"]   = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[:,end,:][:])) .+ offset]); offset += length(cell_array[:,end,:][:])
+    facesets["left"]   = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[1,:,:][:]))   .+ offset]); offset += length(cell_array[1,:,:][:])
+    facesets["top"]    = Set{Tuple{Int,Int}}(boundary[(1:length(cell_array[:,:,end][:])) .+ offset]); offset += length(cell_array[:,:,end][:])
+    facesets["boundary"] = union(facesets["bottom"],facesets["right"],facesets["top"],facesets["left"],facesets["back"],facesets["front"])
+
+    return PolytopalMesh2(entities,nodes,geometry,Dict(2=>facesets))
+end
+
+#########################33
+# Tetrahedron
+##########################33
+
+function hyper_rectagle_mesh2(::Type{TetrahedronCell}, nel::NTuple{3,Int}, left::Vec{3,T}=Vec{3}((0.0,0.0,0.0)), right::Vec{3,T}=Vec{3}((1.0,1.0,1.0))) where {T}
+    nodes_per_dim = nel .+ 1
+
+    cells_per_cube = 6
+    n_nodes = prod(nodes_per_dim)
+    nel_tot = cells_per_cube * prod(nel)
+
+    n_nodes_x, n_nodes_y, n_nodes_z = nodes_per_dim
+    nel_x, nel_y, nel_z = nel
+
+    # Generate nodes
+    coords_x = range(left[1], stop=right[1], length=n_nodes_x)
+    coords_y = range(left[2], stop=right[2], length=n_nodes_y)
+    coords_z = range(left[3], stop=right[3], length=n_nodes_z)
+    numbering = reshape(1:n_nodes, nodes_per_dim)
+
+    # Pre-allocate the nodes & cells
+    nodes = Vector{Tensors.Vec{3,T}}(undef, n_nodes)
+
+    # Generate nodes
+    node_idx = 1
+    @inbounds for k in 1:n_nodes_z, j in 1:n_nodes_y, i in 1:n_nodes_x
+        nodes[node_idx] = Tensors.Vec{3}((coords_x[i], coords_y[j], coords_z[k]))
+        node_idx += 1
+    end
+
+    # Generate cells, case 1 from: http://www.baumanneduard.ch/Splitting%20a%20cube%20in%20tetrahedras2.htm
+    # cube = (1, 2, 3, 4, 5, 6, 7, 8)
+    # left = (1, 4, 5, 8), right = (2, 3, 6, 7)
+    # front = (1, 2, 5, 6), back = (3, 4, 7, 8)
+    # bottom = (1, 2, 3, 4), top = (5, 6, 7, 8)
+    offsets = [1]
+    l = 1
+    indices = []
+    @inbounds for k in 1:nel_z, j in 1:nel_y, i in 1:nel_x
+        cell = (
+            numbering[i  , j  , k],
+            numbering[i+1, j  , k],
+            numbering[i+1, j+1, k],
+            numbering[i  , j+1, k],
+            numbering[i  , j  , k+1],
+            numbering[i+1, j  , k+1],
+            numbering[i+1, j+1, k+1],
+            numbering[i  , j+1, k+1]
+        )
+        l += 4; push!(offsets, l)
+        push!(indices, (cell[1], cell[2], cell[4], cell[8])...)
+        l += 4; push!(offsets, l)
+        push!(indices, (cell[1], cell[5], cell[2], cell[8])...)
+        l += 4; push!(offsets, l)
+        push!(indices, (cell[2], cell[3], cell[4], cell[8])...)
+        l += 4; push!(offsets, l)
+        push!(indices, (cell[2], cell[7], cell[3], cell[8])...)
+        l += 4; push!(offsets, l)
+        push!(indices, (cell[2], cell[5], cell[6], cell[8])...)
+        l += 4; push!(offsets, l)
+        push!(indices, (cell[2], cell[6], cell[7], cell[8])...)
+    end
+
+    geometry = Dict((3,0) => MeshConectivity(Tuple(indices), Tuple(offsets)))
+    n_edges = (nel_x+nel_y+3*nel_x*nel_y)*(nel_z+1) + (nel_z+2*nel_z*nel_y)*(nel_x+1) + nel_x*nel_z*(nel_y+1) + nel_y*nel_x*nel_z
+    n_faces = 2*(nel_x*nel_y*(nel_z+1)+nel_y*nel_z*(nel_x+1)+nel_x*nel_z*(nel_y+1)) + 6*nel_x*nel_y*nel_z
+    entities = (n_nodes, n_edges, n_faces,nel_tot)
+    _build_tetrahedron_geometry!(geometry, indices, offsets,nel_tot, n_edges, n_faces)
+
+    # Order the cells as c_nxyz[n, x, y, z] such that we can look up boundary cells
+    c_nxyz = reshape(1:nel_tot, (cells_per_cube, nel...))
+
+    @views le = [map(x -> (x,4), c_nxyz[1, 1, :, :][:])   ; map(x -> (x,2), c_nxyz[2, 1, :, :][:])]
+    @views ri = [map(x -> (x,1), c_nxyz[4, end, :, :][:]) ; map(x -> (x,1), c_nxyz[6, end, :, :][:])]
+    @views fr = [map(x -> (x,1), c_nxyz[2, :, 1, :][:])   ; map(x -> (x,1), c_nxyz[5, :, 1, :][:])]
+    @views ba = [map(x -> (x,3), c_nxyz[3, :, end, :][:]) ; map(x -> (x,3), c_nxyz[4, :, end, :][:])]
+    @views bo = [map(x -> (x,1), c_nxyz[1, :, :, 1][:])   ; map(x -> (x,1), c_nxyz[3, :, :, 1][:])]
+    @views to = [map(x -> (x,3), c_nxyz[5, :, :, end][:]) ; map(x -> (x,3), c_nxyz[6, :, :, end][:])]
+
+    facesets = Dict(
+        "left" => Set(le),
+        "right" => Set(ri),
+        "front" => Set(fr),
+        "back" => Set(ba),
+        "bottom" => Set(bo),
+        "top" => Set(to),
+        "boundary" => Set(union(le,ri,fr,ba,bo,to))
+    )
+
+    return PolytopalMesh2(entities,nodes,geometry,Dict(2=>facesets))
+
+end

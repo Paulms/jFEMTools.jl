@@ -22,6 +22,8 @@ end
 
 #Generic Interface
 getfacet(mesh::PolytopalMesh2{dim}, facet) where {dim} = getcellsubentities(mesh,facet.cellidx,dim-1)[facet.idx]
+getnfacetvertices(mesh::PolytopalMesh2{dim}, cell_idx, facet_lidx) where {dim} = getnvertices(mesh,getcellsubentities(mesh,cell_idx,dim-1)[facet_lidx])
+reference_facet_vertices(mesh::PolytopalMesh2{dim},cell::MeshEntity{dim})  where {dim} = reference_facet_vertices(getCellType(mesh,cell.index))
 
 "Return coordinates keeping orientation"
 function getverticescoords(mesh::PolytopalMesh2{d}, edge::EdgeIndex) where {d}
@@ -52,6 +54,7 @@ function gettopology(mesh::PolytopalMesh2{dim}, cell::MeshEntity{dim}) where {di
 end
 
 getnedges(mesh::PolytopalMesh2{dim}, cell::MeshEntity{dim}) where {dim} = getncellsubentities(mesh,cell.index,1)
+getnfaces(mesh::PolytopalMesh2{dim}, cell::MeshEntity{dim}) where {dim} = getncellsubentities(mesh,cell.index,2)
 
 function reference_edge_vertices(mesh::PolytopalMesh2{dim}, cell::MeshEntity{dim}) where {dim}
   N = getnvertices(mesh,cell)
@@ -74,6 +77,9 @@ getedgeset(mesh::PolytopalMesh2, set::String) = getentityset(mesh,1,set)
 getfacetset(mesh::PolytopalMesh2{dim}, set::String) where {dim} = getentityset(mesh,dim-1,set)
 getcells(mesh::PolytopalMesh2{dim}) where {dim} = getentities(mesh,dim)
 getcell(mesh::PolytopalMesh2{dim}, idx::Int) where {dim} = (1<= idx <= getncells(mesh) ? MeshEntity{dim}(idx) : error("cell index out of bounds"))
+function getCellType(mesh::PolytopalMesh2{dim}, idx::Int) where {dim}
+  return Cell{dim, getncellsubentities(mesh,idx,0), getncellsubentities(mesh,idx,1), getncellsubentities(mesh,idx,2)}
+end
 getvertices(mesh::PolytopalMesh2) = getentities(mesh,0)
 getedges(mesh::PolytopalMesh2) = getentities(mesh,1)
 getfacets(mesh::PolytopalMesh2{dim}) where {dim} = getentities(mesh,dim-1)
@@ -89,6 +95,7 @@ function getsubentitiesindexes(mesh::PolytopalMesh2,entity::MeshEntity{d1},d2::I
 end
 
 function getncellsubentities(mesh::PolytopalMesh2{dim},cellidx,entity::Int) where {dim}
+  entity == dim && return 1
   connectivity = get_connectivity!(mesh,dim,entity)
   return connectivity.offsets[cellidx+1] - connectivity.offsets[cellidx]
 end
@@ -187,7 +194,7 @@ function _intersection(mesh,d1,d2,d3)
   _pack_connectivity(indices)
 end
 
-function _local_edgesD(mesh,cell)
+function _local_edgesD(mesh::PolytopalMesh2{2},cell)
   indices = getverticesidx(mesh,cell)
   N = size(indices,1)
   idx = Tuple((i,mod1(i+1,N)) for i in 1:N)
@@ -216,6 +223,7 @@ function _build!(mesh::PolytopalMesh2{D},d) where {D}
         end
       end
     end
+  #TODO if d == 2
   else
     error("Automatic construction of entities of dim $d failed")
   end
