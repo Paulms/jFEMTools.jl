@@ -10,7 +10,7 @@ finiteElement = ContinuousLagrange(jF.Triangle,2)
 @test jF.getgeomtopology(finiteElement) == Dict(0=>3,1=>0,2=>0)
 
 finiteElement = ContinuousLagrange(jF.Triangle,1)
-@test finiteElement.nodal_base_coefs ≈ [0.23570226039551578 0.2357022603955159 0.2357022603955158;
+@test finiteElement.polynomial_space.coeffs ≈ [0.23570226039551578 0.2357022603955159 0.2357022603955158;
                                  -0.14433756729740646 0.14433756729740646 0.0; -1/12 -1/12 1/6]
 @test jF.gettopology(finiteElement) == Dict(0=>3,1=>0,2=>0)
 

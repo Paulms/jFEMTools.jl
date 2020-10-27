@@ -31,3 +31,9 @@ function _generate_2d_hex_centroids!(centroids::Vector{Tensors.Vec{2,T}},LL, n_c
   end
   return centroids
 end
+
+function facet_orientation(mesh::AbstractPolytopalMesh, cell_idx::Int, facet_idx::Int)
+  k = reference_facet_vertices(getCellType(mesh, cell_idx))[facet_idx]
+  indices = getverticesindices(mesh, getcell(mesh, cell_idx))
+  return indices[k[end]] > indices[k[1]]
+end

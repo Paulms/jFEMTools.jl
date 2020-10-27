@@ -53,8 +53,8 @@ end
 struct Dubiner{shape,order} <: Interpolation{shape,order} end
 isnodal(ip::Dubiner) = false
 
-getnbasefunctions(::Dubiner{Triangle,order}) where {order} = Int((order+1)*(order+2)/2)
-getnbasefunctions(::Dubiner{Tetrahedron,order}) where {order} = Int((order+1)*(order+2)*(order+3)/6)
+getnbasefunctions(::Dubiner{Triangle,order}) where {order} = getpolynomialbasisdim(order, Triangle)
+getnbasefunctions(::Dubiner{Tetrahedron,order}) where {order} = getpolynomialbasisdim(order, Tetrahedron)
 
 """
 value(ip::Dubiner{Triangle,order}, j::Int, ξ::AbstactVector) where {order}
@@ -263,8 +263,8 @@ end
 struct QuadranguleGauss{shape,order} <: Interpolation{shape,order} end
 isnodal(ip::QuadranguleGauss) = true
 
-getnbasefunctions(::QuadranguleGauss{Rectangle,order}) where {order} = (order+1)^2
-getnbasefunctions(::QuadranguleGauss{Hexahedron,order}) where {order} = (order+1)^3
+getnbasefunctions(::QuadranguleGauss{Rectangle,order}) where {order} = getpolynomialbasisdim(order, Rectangle)
+getnbasefunctions(::QuadranguleGauss{Hexahedron,order}) where {order} = getpolynomialbasisdim(order, Hexahedron)
 
 """
 value(ip::QuadranguleGauss{Rectangle,order}, j::Int, ξ::AbstactVector) where {order}
